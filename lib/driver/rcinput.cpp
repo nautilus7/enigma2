@@ -88,16 +88,28 @@ void eRCDeviceInputDev::handleCode(long rccode)
 		}
 	}
 
-#if KEY_PLAY_ACTUALLY_IS_KEY_PLAYPAUSE
-	if (ev->code == KEY_PLAY)
+	if (!remaps.empty())
 	{
-		if (id == "dreambox advanced remote control (native)")
+		std::unordered_map<unsigned int, unsigned int>::iterator i = remaps.find(ev->code);
+		if (i != remaps.end())
 		{
-			/* 8k rc has a KEY_PLAYPAUSE key, which sends KEY_PLAY events. Correct this, so we do not have to place hacks in the keymaps. */
-			ev->code = KEY_PLAYPAUSE;
+			eDebug("[eRCDeviceInputDev] map: %u->%u", i->first, i->second);
+			ev->code = i->second;
 		}
 	}
+	else
+	{
+#if KEY_PLAY_ACTUALLY_IS_KEY_PLAYPAUSE
+		if (ev->code == KEY_PLAY)
+		{
+			if ((id == "dreambox advanced remote control (native)")  || (id == "bcm7325 remote control"))
+			{
+				/* 8k rc has a KEY_PLAYPAUSE key, which sends KEY_PLAY events. Correct this, so we do not have to place hacks in the keymaps. */
+				ev->code = KEY_PLAYPAUSE;
+			}
+		}
 #endif
+	}
 
 	switch (ev->value)
 	{
@@ -111,6 +123,12 @@ void eRCDeviceInputDev::handleCode(long rccode)
 			input->keyPressed(eRCKey(this, ev->code, eRCKey::flagRepeat)); /*emit*/
 			break;
 	}
+}
+
+int eRCDeviceInputDev::setKeyMapping(const std::unordered_map<unsigned int, unsigned int>& remaps_p)
+{
+	remaps = remaps_p;
+	return eRCInput::remapOk;
 }
 
 eRCDeviceInputDev::eRCDeviceInputDev(eRCInputEventDriver *driver, int consolefd)
