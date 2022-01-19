@@ -73,7 +73,7 @@
 
 			<menu weight="50" level="0" text="Software" entryID="software_setup">
 				<id val="software" />
-				<item weight="10" level="0" text="Software update" entryID="software_update"><screen module="SoftwareUpdate" screen="UpdatePlugin" /></item>
+				<item weight="10" level="0" text="Software update" entryID="software_update"><screen module="SoftwareUpdate" screen="SoftwareUpdate" /></item>
 				<item weight="20" level="0" text="Flash image" entryID="flash_image" requires="canFlashWithOfgwrite"><screen module="FlashImage" screen="SelectImage" /></item>
 				<item weight="30" level="0" text="Factory reset" entryID="factory_reset"><screen module="FactoryReset" screen="FactoryReset" /></item>
 			</menu>

@@ -9,6 +9,18 @@ if [ -d /home/root ]; then
 	cd
 fi
 
+# Function to determine if a BusyBox update has been flagged and do the update.
+# This code should be run just before a restart to ensure that any shell changes
+# do not impact running code.
+#
+function check_busybox_update {
+	if [ -e /etc/enigma2/.busybox_update_required ]; then
+		DEFERRED=`cat /etc/enigma2/.busybox_update_required`
+		rm /etc/enigma2/.busybox_update_required
+		${DEFERRED} 2>&1 | tee -a /home/root/opkgupgrade.log
+	fi
+}
+
 # any debuglevel passed?
 if [ -z $ENIGMA_DEBUG_LVL ]; then
 	DEBUG_LVL=3
@@ -51,7 +63,6 @@ while : ; do
 		LD_PRELOAD=$LIBS ENIGMA_DEBUG_LVL=$DEBUG_LVL @bindir@/enigma2 >> $file 2>&1
 	fi
 
-
 	# enigma2 exit codes:
 	#
 	#  1 - halt
@@ -69,9 +80,11 @@ while : ; do
 	ret=$?
 	case $ret in
 		1)
+			check_busybox_update
 			/sbin/halt
 			;;
 		2)
+			check_busybox_update
 			/sbin/reboot
 			;;
 		3)
@@ -83,6 +96,7 @@ while : ; do
 			sleep 1;
 			/sbin/rmmod fp
 			/sbin/modprobe fp
+			check_busybox_update
 			/sbin/reboot
 			;;
 		5)
@@ -108,10 +122,6 @@ while : ; do
 			prevupd=0
 			currupd=999
 			opkg update 2>&1 | tee /home/root/opkgupgrade.log
-			# check if we need to upgrade busybox first
-			if [ "$(opkg list-upgradable busybox)" != "" ]; then
-				opkg update busybox 2>&1 | tee -a /home/root/opkgupgrade.log
-			fi
 			# update all other packages
 			while [ $currupd -gt 0 -a $currupd -ne $prevupd ]; do
 				opkg upgrade $DESTS 2>&1 | tee -a /home/root/opkgupgrade.log
@@ -119,6 +129,7 @@ while : ; do
 				currupd=`opkg list-upgradable | wc -l`
 				echo "===> $currupd PACKAGE(S) REMAINING" >> /home/root/opkgupgrade.log
 			done
+			check_busybox_update
 			/sbin/reboot
 			;;
 		43)
