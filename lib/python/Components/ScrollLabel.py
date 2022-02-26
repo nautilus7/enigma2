@@ -40,10 +40,10 @@ class ScrollLabel(GUIComponent):
 				elif "transparent" in attrib or "backgroundColor" in attrib:
 					widget_attribs.append((attrib, value))
 				elif "scrollbarWidth" in attrib:
-					scrollbarWidth = skin.parseScale(value)
+					scrollbarWidth = int(value)
 					self.skinAttributes.remove((attrib, value))
 				elif "scrollbarSliderBorderWidth" in attrib:
-					scrollbarBorderWidth = skin.parseScale(value)
+					scrollbarBorderWidth = int(value)
 					self.skinAttributes.remove((attrib, value))
 				elif "split" in attrib:
 					self.split = 1 if value.lower() in ("1", "enabled", "on", "split", "true", "yes") else 0
@@ -51,7 +51,7 @@ class ScrollLabel(GUIComponent):
 						self.right_text = eLabel(self.instance)
 					self.skinAttributes.remove((attrib, value))
 				elif "colposition" in attrib:
-					self.column = skin.parseScale(value)
+					self.column = int(value)
 				elif "dividechar" in attrib:
 					self.splitchar = value
 			if self.split:
