@@ -1396,9 +1396,6 @@ class ConfigDictionarySet(ConfigElement):
 		self.dirs = {}
 		self.value = self.default
 
-	def getKeys(self):
-		return self.dir_pathes
-
 	def setValue(self, value):
 		if isinstance(value, dict):
 			self.dirs = value

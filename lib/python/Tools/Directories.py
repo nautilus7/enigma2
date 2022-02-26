@@ -77,6 +77,15 @@ scopeFonts = defaultPaths[SCOPE_FONTS][0]
 scopePlugins = defaultPaths[SCOPE_PLUGINS][0]
 
 
+def addInList(*paths):
+	return [path for path in paths if os.path.isdir(path)]
+
+
+skinResolveList = []
+lcdskinResolveList = []
+fontsResolveList = []
+
+
 def resolveFilename(scope, base="", path_prefix=None):
 	if str(base).startswith("~%s" % os.sep):  # You can only use the ~/ if we have a prefix directory.
 		if path_prefix:
@@ -131,55 +140,69 @@ def resolveFilename(scope, base="", path_prefix=None):
 					relative = "%s%s%s" % (pluginCode[0], os.sep, pluginCode[1])
 					path = os.path.join(plugins, relative)
 	elif scope == SCOPE_GUISKIN:
-		from Components.config import config  # This import must be here as this module finds the config file as part of the config initialisation.
-		skin = os.path.dirname(config.skin.primary_skin.value)
-		resolveList = [
-			os.path.join(scopeConfig, skin),
-			os.path.join(scopeConfig, "skin_common"),
-			scopeConfig,
-			os.path.join(scopeGUISkin, skin),
-			os.path.join(scopeGUISkin, "skin_default"),
-			scopeGUISkin
-		]
-		path = itemExists(resolveList, base)
+		global skinResolveList
+		if not skinResolveList:
+			from Components.config import config  # This import must be here as this module finds the config file as part of the config initialisation.
+			skin = os.path.dirname(config.skin.primary_skin.value)
+			skinResolveList = addInList(
+				os.path.join(scopeConfig, skin),
+				os.path.join(scopeConfig, "skin_common"),
+				scopeConfig,
+				os.path.join(scopeGUISkin, skin),
+				os.path.join(scopeGUISkin, "skin_default"),
+				scopeGUISkin
+			)
+		path = itemExists(skinResolveList, base)
 	elif scope == SCOPE_LCDSKIN:
-		from Components.config import config  # This import must be here as this module finds the config file as part of the config initialisation.
-		skin = os.path.dirname(config.skin.display_skin.value) if hasattr(config.skin, "display_skin") else ""
-		resolveList = [
-			os.path.join(scopeConfig, "display", skin),
-			os.path.join(scopeConfig, "display", "skin_common"),
-			scopeConfig,
-			os.path.join(scopeLCDSkin, skin),
-			os.path.join(scopeLCDSkin, "skin_default"),
-			scopeLCDSkin
-		]
-		path = itemExists(resolveList, base)
+		global lcdskinResolveList
+		if not lcdskinResolveList:
+			from Components.config import config  # This import must be here as this module finds the config file as part of the config initialisation.
+			skin = os.path.dirname(config.skin.display_skin.value) if hasattr(config.skin, "display_skin") else ""
+			lcdskinResolveList = addInList(
+				os.path.join(scopeConfig, "display", skin),
+				os.path.join(scopeConfig, "display", "skin_common"),
+				scopeConfig,
+				os.path.join(scopeLCDSkin, skin),
+				os.path.join(scopeLCDSkin, "skin_default"),
+				scopeLCDSkin
+			)
+		path = itemExists(lcdskinResolveList, base)
 	elif scope == SCOPE_FONTS:
-		from Components.config import config  # This import must be here as this module finds the config file as part of the config initialisation.
-		skin = os.path.dirname(config.skin.primary_skin.value)
-		display = os.path.dirname(config.skin.display_skin.value) if hasattr(config.skin, "display_skin") else None
-		resolveList = [
-			os.path.join(scopeConfig, "fonts"),
-			os.path.join(scopeConfig, skin, "fonts"),
-			os.path.join(scopeConfig, skin)
-		]
-		if display:
-			resolveList.append(os.path.join(scopeConfig, "display", display, "fonts"))
-			resolveList.append(os.path.join(scopeConfig, "display", display))
-		resolveList.append(os.path.join(scopeConfig, "skin_common", "fonts"))
-		resolveList.append(os.path.join(scopeConfig, "skin_common"))
-		resolveList.append(scopeConfig)
-		resolveList.append(os.path.join(scopeGUISkin, skin, "fonts"))
-		resolveList.append(os.path.join(scopeGUISkin, skin))
-		resolveList.append(os.path.join(scopeGUISkin, "skin_default", "fonts"))
-		resolveList.append(os.path.join(scopeGUISkin, "skin_default"))
-		if display:
-			resolveList.append(os.path.join(scopeLCDSkin, display, "fonts"))
-			resolveList.append(os.path.join(scopeLCDSkin, display))
-		resolveList.append(os.path.join(scopeLCDSkin, "skin_default", "fonts"))
-		resolveList.append(os.path.join(scopeLCDSkin, "skin_default"))
-		resolveList.append(scopeFonts)
-		path = itemExists(resolveList, base)
+		global fontsResolveList
+		if not fontsResolveList:
+			from Components.config import config  # This import must be here as this module finds the config file as part of the config initialisation.
+			skin = os.path.dirname(config.skin.primary_skin.value)
+			display = os.path.dirname(config.skin.display_skin.value) if hasattr(config.skin, "display_skin") else None
+			fontsResolveList = addInList(
+				os.path.join(scopeConfig, "fonts"),
+				os.path.join(scopeConfig, skin, "fonts"),
+				os.path.join(scopeConfig, skin)
+			)
+			if display:
+				fontsResolveList += addInList(
+					os.path.join(scopeConfig, "display", display, "fonts"),
+					os.path.join(scopeConfig, "display", display)
+				)
+			fontsResolveList += addInList(
+				os.path.join(scopeConfig, "skin_common", "fonts"),
+				os.path.join(scopeConfig, "skin_common"),
+				scopeConfig,
+				os.path.join(scopeGUISkin, skin, "fonts"),
+				os.path.join(scopeGUISkin, skin),
+				os.path.join(scopeGUISkin, "skin_default", "fonts"),
+				os.path.join(scopeGUISkin, "skin_default")
+			)
+			if display:
+				fontsResolveList += addInList(
+					os.path.join(scopeLCDSkin, display, "fonts"),
+					os.path.join(scopeLCDSkin, display)
+				)
+			fontsResolveList += addInList(
+				os.path.join(scopeLCDSkin, "skin_default", "fonts"),
+				os.path.join(scopeLCDSkin, "skin_default"),
+				scopeFonts
+			)
+		path = itemExists(fontsResolveList, base)
 	elif scope == SCOPE_PLUGIN:
 		file = os.path.join(scopePlugins, base)
 		if pathExists(file):
