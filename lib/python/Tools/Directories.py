@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 import errno
 import os
-
-from enigma import eEnv
 from re import compile, split
 from stat import S_IMODE
 from sys import _getframe as getframe
+from tempfile import mkstemp
+from traceback import print_exc
 from unicodedata import normalize
+from xml.etree.ElementTree import Element, ParseError, fromstring, parse
 
+from enigma import eEnv, eGetEnigmaDebugLvl
+
+DEFAULT_MODULE_NAME = __name__.split(".")[-1]
+
+forceDebug = eGetEnigmaDebugLvl() > 4
 pathExists = os.path.exists
 isMount = os.path.ismount  # Only used in OpenATV /lib/python/Plugins/SystemPlugins/NFIFlash/downloader.py.
 
@@ -229,6 +235,111 @@ def resolveFilename(scope, base="", path_prefix=None):
 	return path
 
 
+def fileReadLine(filename, default=None, source=DEFAULT_MODULE_NAME, debug=False):
+	line = None
+	try:
+		with open(filename, "r") as fd:
+			line = fd.read().strip().replace("\0", "")
+		msg = "Read"
+	except (IOError, OSError) as err:
+		if err.errno != errno.ENOENT:  # ENOENT - No such file or directory.
+			print("[%s] Error %d: Unable to read a line from file '%s'!  (%s)" % (source, err.errno, filename, err.strerror))
+		line = default
+		msg = "Default"
+	if debug or forceDebug:
+		print("[%s] Line %d: %s '%s' from file '%s'." % (source, getframe(1).f_lineno, msg, line, filename))
+	return line
+
+
+def fileWriteLine(filename, line, source=DEFAULT_MODULE_NAME, debug=False):
+	try:
+		with open(filename, "w") as fd:
+			fd.write(str(line))
+		msg = "Wrote"
+		result = 1
+	except (IOError, OSError) as err:
+		print("[%s] Error %d: Unable to write a line to file '%s'!  (%s)" % (source, err.errno, filename, err.strerror))
+		msg = "Failed to write"
+		result = 0
+	if debug or forceDebug:
+		print("[%s] Line %d: %s '%s' to file '%s'." % (source, getframe(1).f_lineno, msg, line, filename))
+	return result
+
+
+def fileReadLines(filename, default=None, source=DEFAULT_MODULE_NAME, debug=False):
+	lines = None
+	try:
+		with open(filename, "r") as fd:
+			lines = fd.read().splitlines()
+		msg = "Read"
+	except (IOError, OSError) as err:
+		if err.errno != errno.ENOENT:  # ENOENT - No such file or directory.
+			print("[%s] Error %d: Unable to read lines from file '%s'!  (%s)" % (source, err.errno, filename, err.strerror))
+		lines = default
+		msg = "Default"
+	if debug or forceDebug:
+		length = len(lines) if lines else 0
+		print("[%s] Line %d: %s %d lines from file '%s'." % (source, getframe(1).f_lineno, msg, length, filename))
+	return lines
+
+
+def fileWriteLines(filename, lines, source=DEFAULT_MODULE_NAME, debug=False):
+	try:
+		with open(filename, "w") as fd:
+			if isinstance(lines, list):
+				lines.append("")
+				lines = "\n".join(lines)
+			fd.write(lines)
+		msg = "Wrote"
+		result = 1
+	except (IOError, OSError) as err:
+		print("[%s] Error %d: Unable to write %d lines to file '%s'!  (%s)" % (source, err.errno, len(lines), filename, err.strerror))
+		msg = "Failed to write"
+		result = 0
+	if debug or forceDebug:
+		print("[%s] Line %d: %s %d lines to file '%s'." % (source, getframe(1).f_lineno, msg, len(lines), filename))
+	return result
+
+
+def fileReadXML(filename, default=None, source=DEFAULT_MODULE_NAME, debug=False):
+	dom = None
+	try:
+		with open(filename, "r") as fd:  # This open gets around a possible file handle leak in Python's XML parser.
+			try:
+				dom = parse(fd).getroot()
+				msg = "Read"
+			except ParseError as err:
+				fd.seek(0)
+				content = fd.readlines()
+				line, column = err.position
+				print("[%s] XML Parse Error: '%s' in '%s'!" % (source, err, filename))
+				data = content[line - 1].replace("\t", " ").rstrip()
+				print("[%s] XML Parse Error: '%s'" % (source, data))
+				print("[%s] XML Parse Error: '%s^%s'" % (source, "-" * column, " " * (len(data) - column - 1)))
+			except Exception as err:
+				print("[%s] Error: Unable to parse data in '%s' - '%s'!" % (source, filename, err))
+	except (IOError, OSError) as err:
+		if err.errno == errno.ENOENT:  # ENOENT - No such file or directory.
+			print("[%s] Warning: File '%s' does not exist!" % (source, filename))
+		else:
+			print("[%s] Error %d: Opening file '%s'!  (%s)" % (source, err.errno, filename, err.strerror))
+	except Exception as err:
+		print("[%s] Error: Unexpected error opening/parsing file '%s'!  (%s)" % (source, filename, err))
+		print_exc()
+	if dom is None:
+		if default and isinstance(default, str):
+			dom = fromstring(default)
+			msg = "Default (XML)"
+		elif default and isinstance(default, Element):
+			dom = default
+			msg = "Default (DOM)"
+		else:
+			msg = "Failed to read"
+	if debug or forceDebug:
+		print("[%s] Line %d: %s from XML file '%s'." % (source, getframe(1).f_lineno, msg, filename))
+	return dom
+
+
 def comparePaths(leftPath, rightPath):
 	if leftPath.endswith(os.sep):
 		leftPath = leftPath[:-1]
@@ -306,28 +417,63 @@ def removeDir(path):
 		return 0
 
 
-def fileExists(f, mode="r"):
-	if mode == "r":
-		acc_mode = os.R_OK
-	elif mode == "w":
-		acc_mode = os.W_OK
-	else:
-		acc_mode = os.F_OK
-	return os.access(f, acc_mode)
+def fileAccess(file, mode="r"):
+	accMode = os.F_OK
+	if "r" in mode:
+		accMode |= os.R_OK
+	if "w" in mode:
+		accMode |= os.W_OK
+	result = False
+	try:
+		result = os.access(file, accMode)
+	except (IOError, OSError) as err:
+		print("[Directories] Error %d: Couldn't determine file '%s' access mode!  (%s)" % (err.errno, file, err.strerror))
+	return result
+
+
+def fileExists(file, mode="r"):
+	return fileAccess(file, mode) and file
 
 
 def fileCheck(f, mode="r"):
 	return fileExists(f, mode) and f
 
 
-def fileHas(f, content, mode="r"):
+def fileContains(file, content, mode="r"):
 	result = False
-	if fileExists(f, mode):
-		file = open(f, mode)
-		text = file.read()
-		file.close()
+	if fileExists(file, mode):
+		with open(file, mode) as fd:
+			text = fd.read()
 		if content in text:
 			result = True
+	return result
+
+
+def fileHas(file, content, mode="r"):
+	return fileContains(file, content, mode)
+
+
+def hasHardLinks(path):  # Test if the volume containing path supports hard links.
+	try:
+		fd, srcName = mkstemp(prefix="HardLink_", suffix=".test", dir=path, text=False)
+	except (IOError, OSError) as err:
+		print("[Directories] Error %d: Creating temp file!  (%s)" % (err.errno, err.strerror))
+		return False
+	dstName = "%s.link" % os.path.splitext(srcName)[0]
+	try:
+		os.link(srcName, dstName)
+		result = True
+	except (IOError, OSError) as err:
+		print("[Directories] Error %d: Creating hard link!  (%s)" % (err.errno, err.strerror))
+		result = False
+	try:
+		os.remove(srcName)
+	except (IOError, OSError) as err:
+		print("[Directories] Error %d: Removing source file!  (%s)" % (err.errno, err.strerror))
+	try:
+		os.remove(dstName)
+	except (IOError, OSError) as err:
+		print("[Directories] Error %d: Removing destination file!  (%s)" % (err.errno, err.strerror))
 	return result
 
 
