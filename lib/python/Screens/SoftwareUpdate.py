@@ -9,7 +9,7 @@ from Components.config import config
 from Components.About import about
 from Components.ActionMap import ActionMap
 from Components.Opkg import OpkgComponent
-from Components.Language import language
+from Components.International import international
 from Components.Sources.StaticText import StaticText
 from Components.Slider import Slider
 from Tools.BoundFunction import boundFunction
@@ -121,11 +121,11 @@ class UpdatePlugin(Screen, ProtectedScreen):
 
 				# check if we have per-language messages
 				if isinstance(message, dict):
-					lang = language.getLanguage()
-					if lang in message:
-						message = message[lang]
-					elif 'en_EN' in message:
-						message = message['en_EN']
+					locale = international.getLocale()
+					if locale in message:
+						message = message[locale]
+					elif 'en_US' in message:
+						message = message['en_US']
 					else:
 						message = _("The current image might not be stable.\nFor more information see %s.") % ("https://forums.openpli.org")
 

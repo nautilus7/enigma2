@@ -14,13 +14,12 @@ from Components.ProgressBar import ProgressBar
 from Components.Label import Label
 from Components.ScrollLabel import ScrollLabel
 from Components.config import config, ConfigBoolean, configfile
-from Screens.LanguageSelection import LanguageWizard
+from Screens.LocaleSelection import LocaleWizard
 from enigma import eConsoleAppContainer, eTimer, eActionMap
 
 import os
 
 config.misc.firstrun = ConfigBoolean(default=True)
-config.misc.languageselected = ConfigBoolean(default=True)
 config.misc.do_overscanwizard = ConfigBoolean(default=OverscanWizard and config.skin.primary_skin.value == "PLi-FullNightHD/skin.xml")
 
 
@@ -52,11 +51,11 @@ def setLanguageFromBackup(backupfile):
 			if member.name == 'etc/enigma2/settings':
 				for line in tar.extractfile(member):
 					line = line.decode()
-					if line.startswith('config.osd.language'):
-						languageToSelect = line.strip().split('=')[1]
-						if languageToSelect:
-							from Components.Language import language
-							language.activateLanguage(languageToSelect)
+					if line.startswith('config.misc.locale'):
+						localeToSelect = line.strip().split('=')[1]
+						if localeToSelect:
+							from Components.International import international
+							international.activateLocale(localeToSelect)
 							break
 		tar.close()
 	except:
@@ -180,8 +179,7 @@ if not os.path.isfile("/etc/installed"):
 	Console().ePopen("opkg list_installed | cut -d ' ' -f 1 > /etc/installed;chmod 444 /etc/installed")
 
 wizardManager.registerWizard(AutoInstallWizard, os.path.isfile("/etc/.doAutoinstall"), priority=0)
-wizardManager.registerWizard(AutoRestoreWizard, config.misc.languageselected.value and config.misc.firstrun.value and checkForAvailableAutoBackup(), priority=0)
-wizardManager.registerWizard(LanguageWizard, config.misc.languageselected.value, priority=10)
+wizardManager.registerWizard(AutoRestoreWizard, config.misc.firstrun.value and checkForAvailableAutoBackup(), priority=10)
 if OverscanWizard:
 	wizardManager.registerWizard(OverscanWizard, config.misc.do_overscanwizard.value, priority=30)
 wizardManager.registerWizard(StartWizard, config.misc.firstrun.value, priority=40)

@@ -112,7 +112,6 @@ jobs:
         sudo sh -c "echo 'config.misc.do_overscanwizard=false' > /usr/local/etc/enigma2/settings"
         sudo sh -c "echo 'config.misc.firstrun=false' >> /usr/local/etc/enigma2/settings"
         sudo sh -c "echo 'config.misc.initialchannelselection=false' >> /usr/local/etc/enigma2/settings"
-        sudo sh -c "echo 'config.misc.languageselected=false' >> /usr/local/etc/enigma2/settings"
         sudo sh -c "echo 'config.misc.videowizardenabled=false' >> /usr/local/etc/enigma2/settings"
     - name: start enigma2
       run: |

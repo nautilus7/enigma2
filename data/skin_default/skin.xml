@@ -713,20 +713,6 @@ self.autoResize()
 		<widget name="status" position="10,60" size="550,45" font="Regular;18"/>
 		<widget name="slider" position="10,100" size="530,15" pixmap="progress_big.png" borderWidth="2" borderColor="#cccccc"/>
 	</screen>
-	<!-- Language selection -->
-	<screen name="LanguageSelection" position="center,center" size="380,300" title="Language selection">
-		<widget source="languages" render="Listbox" position="0,0" size="380,300" scrollbarMode="showOnDemand">
-			<convert type="TemplatedMultiContent">
-				{"template": [
-						MultiContentEntryText(pos = (80, 10), size = (200, 50), flags = RT_HALIGN_LEFT, text = 1), # index 1 is the language name,
-						MultiContentEntryPixmap(pos = (10, 5), size = (60, 40), png = 2), # index 2 is the pixmap
-					],
-				 "fonts": [gFont("Regular", 20)],
-				 "itemHeight": 50
-				}
-			</convert>
-		</widget>
-	</screen>
 	<screen name="LanguageWizard" position="fill" title="Welcome..." flags="wfNoBorder">
 		<panel name="WizardMarginsTemplate"/>
 		<panel name="RemoteControlTemplate"/>

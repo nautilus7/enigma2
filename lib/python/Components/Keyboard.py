@@ -1,7 +1,7 @@
 from os import listdir
 
 from Components.Console import Console
-# from Components.Language import language
+# from Components.International import international
 from Tools.Directories import SCOPE_KEYMAPS, pathExists, resolveFilename
 
 
@@ -49,7 +49,7 @@ class Keyboard:
 		# selection based on language locale makes more sense.  There
 		# are other code changes coming that will allow this to happen.
 		#
-		# locale = language.getLocale()
+		# locale = international.getLocale()
 		# if locale.startswith("de_") and "de.kmap" in self.keyboardMaps:
 		# 	return "de.kmap"
 		return "default.kmap"

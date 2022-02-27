@@ -5,8 +5,8 @@ from enigma import BT_SCALE, RT_HALIGN_CENTER, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, 
 from skin import fonts, parameters
 from Components.ActionMap import HelpableNumberActionMap
 from Components.Input import Input
+from Components.International import international
 from Components.Label import Label
-from Components.Language import language
 from Components.MenuList import MenuList
 from Components.MultiContent import MultiContentEntryText, MultiContentEntryPixmapAlphaBlend
 from Components.Sources.StaticText import StaticText
@@ -458,7 +458,6 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 			"en_AU": [_("English"), _("Australian"), self.english],
 			"en_GB": [_("English"), _("United Kingdom"), self.unitedKingdom(self.english)],
 			"en_US": [_("English"), _("United States"), self.english],
-			"en_EN": [_("English"), _("Various"), self.english],
 			"et_EE": [_("Estonian"), _("Estonia"), self.estonian(self.scandinavian)],
 			"fi_FI": [_("Finnish"), _("Finland"), self.scandinavian],
 			"fr_BE": [_("French"), _("Belgian"), self.belgian(self.french)],
@@ -513,13 +512,12 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 			"9": (self.keyNumberGlobal, _("Number or SMS style data entry")),
 			"gotAsciiCode": (self.keyGotAscii, _("Keyboard data entry"))
 		}, -2, description=_("Virtual KeyBoard Functions"))
-		self.lang = language.getLanguage()
+		self.lang = international.getLocale()
 		self["prompt"] = Label(prompt)
 		self["text"] = Input(text=text, maxSize=maxSize, visible_width=visible_width, type=type, currPos=len(text) if currPos is None else currPos, allMarked=allMarked)
 		self["list"] = VirtualKeyBoardList([])
 		self["mode"] = Label(_("INS"))
 		self["locale"] = Label(_("Locale") + ": " + self.lang)
-		self["language"] = Label(_("Language") + ": " + self.lang)
 		self["key_info"] = StaticText(_("INFO"))
 		self["key_red"] = StaticText(_("Exit"))
 		self["key_green"] = StaticText(_(greenLabel))
@@ -878,9 +876,9 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 	def setLocale(self):
 		self.language, self.location, self.keyList = self.locales.get(self.lang, [None, None, None])
 		if self.language is None or self.location is None or self.keyList is None:
-			self.lang = "en_EN"
+			self.lang = "en_US"
 			self.language = _("English")
-			self.location = _("Various")
+			self.location = _("United States")
 			self.keyList = self.english
 		self.shiftLevel = 0
 		self["locale"].setText(_("Locale") + ": " + self.lang + "  (" + self.language + " - " + self.location + ")")

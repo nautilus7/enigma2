@@ -23,7 +23,7 @@ from Components.Console import Console
 from Components.SelectionList import SelectionList
 from Components.PluginComponent import plugins
 from Components.PackageInfo import PackageInfoHandler
-from Components.Language import language
+from Components.International import international
 from Components.AVSwitch import AVSwitch
 from Tools.Directories import resolveFilename, SCOPE_PLUGINS, SCOPE_CURRENT_PLUGIN, SCOPE_CURRENT_SKIN, SCOPE_METADIR
 from Tools.LoadPixmap import LoadPixmap
@@ -1104,7 +1104,7 @@ class PluginDetails(Screen, PackageInfoHandler):
 	def __init__(self, session, plugin_path, packagedata=None):
 		Screen.__init__(self, session)
 		self.skin_path = plugin_path
-		self.language = language.getLanguage()[:2] # getLanguage returns e.g. "fi_FI" for "language_country"
+		self.language = international.getLanguage()
 		self.attributes = None
 		PackageInfoHandler.__init__(self, self.statusCallback)
 		self.directory = resolveFilename(SCOPE_METADIR)

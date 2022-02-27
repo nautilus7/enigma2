@@ -184,7 +184,7 @@ eServiceDVD::eServiceDVD(eServiceReference ref):
 	ddvd_set_dvd_path(m_ddvdconfig, ref.path.c_str());
 	ddvd_set_ac3thru(m_ddvdconfig, 0);
 
-	std::string ddvd_language = eConfigManager::getConfigValue("config.osd.language");
+	std::string ddvd_language = eConfigManager::getConfigValue("config.misc.locale");
 	if (ddvd_language != "")
 		ddvd_set_language(m_ddvdconfig, (ddvd_language.substr(0, 2)).c_str());
 
@@ -1120,7 +1120,7 @@ void eServiceDVD::saveCuesheet()
 		if (stat("/home/root", &st) == 0 && stat(filename.c_str(), &st) != 0)
 			if (mkdir(filename.c_str(), 0755))
 				return; // cannot create directory so no point in trying to save cue data
-			
+
 		filename += "/";
 		if (m_ddvd_titlestring[0] != '\0')
 			filename += m_ddvd_titlestring;

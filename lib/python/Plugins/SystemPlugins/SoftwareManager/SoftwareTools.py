@@ -2,7 +2,7 @@
 from Components.Console import Console
 from Components.About import about
 from Components.PackageInfo import PackageInfoHandler
-from Components.Language import language
+from Components.International import international
 from Components.Sources.List import List
 from Components.Opkg import OpkgComponent
 from Components.Network import iNetwork
@@ -26,7 +26,7 @@ class SoftwareTools(PackageInfoHandler):
 			self.ImageVersion = 'Experimental'
 		else:
 			self.ImageVersion = 'Stable'
-		self.language = language.getLanguage()[:2] # getLanguage returns e.g. "fi_FI" for "language_country"
+		self.language = international.getLanguage()
 		PackageInfoHandler.__init__(self, self.statusCallback, neededTag='ALL_TAGS', neededFlag=self.ImageVersion)
 		self.directory = resolveFilename(SCOPE_METADIR)
 		self.list = List([])

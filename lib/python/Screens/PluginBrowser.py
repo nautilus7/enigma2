@@ -7,7 +7,7 @@ from Components.config import config, ConfigSubsection, ConfigText
 from Components.PluginComponent import plugins
 from Components.PluginList import *
 from Components.Label import Label
-from Components.Language import language
+from Components.International import international
 from Components.ServiceList import refreshServiceList
 from Components.Harddisk import harddiskmanager
 from Components.Sources.StaticText import StaticText
@@ -23,7 +23,7 @@ from Tools.LoadPixmap import LoadPixmap
 from time import time
 import os
 
-language.addCallback(plugins.reloadPlugins)
+international.addCallback(plugins.reloadPlugins)
 
 config.misc.pluginbrowser = ConfigSubsection()
 config.misc.pluginbrowser.plugin_order = ConfigText(default="")
