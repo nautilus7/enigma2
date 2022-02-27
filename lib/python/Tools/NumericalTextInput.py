@@ -1,6 +1,6 @@
 from enigma import eTimer
 
-from Components.Language import language
+from Components.International import international
 
 MAP_SEARCH_UPCASE = "SearchUpper"  # NOTE: Legacy interface for previous and deprecated versions of NumericalTextInput.
 MAP_SEARCH = "SearchLower"
@@ -9,15 +9,16 @@ MODES = {
 	"DEFAULT": 0,
 	"DEFAULTUPPER": 1,
 	"DEFAULTLOWER": 2,
-	"HEX": 6,
-	"HEXUPPER": 7,
-	"HEXLOWER": 8,
-	"HEXFAST": 9,
-	"HEXFASTUPPER": 10,
-	"HEXFASTLOWER": 11,
-	"HEXFASTLOGICAL": 12,
-	"HEXFASTLOGICALUPPER": 13,
-	"HEXFASTLOGICALLOWER": 14,
+	"HEX": 7,
+	"HEXUPPER": 8,
+	"HEXLOWER": 9,
+	"HEXFAST": 10,
+	"HEXFASTUPPER": 11,
+	"HEXFASTLOWER": 12,
+	"HEXFASTLOGICAL": 13,
+	"HEXFASTLOGICALUPPER": 14,
+	"HEXFASTLOGICALLOWER": 15,
+	"NUMBER": 6,
 	"SEARCH": 3,
 	"SEARCHUPPER": 4,
 	"SEARCHLOWER": 5
@@ -27,17 +28,17 @@ PUNCTUATION0 = "0,?!'\"\\()<>[]{}~^`|"
 PUNCTUATION1 = "1 .:;+-*/=_@#$%&"
 
 MAPPINGS = (
-	# Text, TextUpper, TextLower, Search, SearchUpper, SearchLower, Hex, HexUpper, HexLower, HexFast, HexFastUpper, HexFastLower, HexLogical, HexLogicalUpper, HexLogicalLower
-	(PUNCTUATION0, PUNCTUATION0, PUNCTUATION0, "%_0", "%_0", "%_0", "0", "0", "0", "0", "0", "0", "0Aa", "0A", "0a"),
-	(PUNCTUATION1, PUNCTUATION1, PUNCTUATION1, " 1", " 1", " 1", "1AaBbCc", "1ABC", "1abc", "1Aa", "1A", "1a", "1Bb", "1B", "1b"),
-	("abc2ABC", "ABC2", "abc2", "abc2ABC", "ABC2", "abc2", "2DdEeFf", "2DEF", "2def", "2Bb", "2B", "2b", "2Cc", "2C", "2c"),
-	("def3DEF", "DEF3", "def3", "def3DEF", "DEF3", "def3", "3", "3", "3", "3Cc", "3C", "3c", "3Dd", "3D", "3d"),
-	("ghi4GHI", "GHI4", "ghi4", "ghi4GHI", "GHI4", "ghi4", "4", "4", "4", "4Dd", "4D", "4d", "4Ee", "4E", "4e"),
-	("jkl5JKL", "JKL5", "jkl5", "jkl5JKL", "JKL5", "jkl5", "5", "5", "5", "5Ee", "5E", "5e", "5Ff", "5F", "5f"),
-	("mno6MNO", "MNO6", "mno6", "mno6MNO", "MNO6", "mno6", "6", "6", "6", "6Ff", "6F", "6f", "6", "6", "6"),
-	("pqrs7PQRS", "PQRS7", "pqrs7", "pqrs7PQRS", "PQRS7", "pqrs7", "7", "7", "7", "7", "7", "7", "7", "7", "7"),
-	("tuv8TUV", "TUV8", "tuv8", "tuv8TUV", "TUV8", "tuv8", "8", "8", "8", "8", "8", "8", "8", "8", "8"),
-	("wxyz9WXYZ", "WXYZ9", "wxyz9", "wxyz9WXYZ", "WXYZ9", "wxyz9", "9", "9", "9", "9", "9", "9", "9", "9", "9")
+	# Text, TextUpper, TextLower, Search, SearchUpper, SearchLower, Number, Hex, HexUpper, HexLower, HexFast, HexFastUpper, HexFastLower, HexLogical, HexLogicalUpper, HexLogicalLower
+	(PUNCTUATION0, PUNCTUATION0, PUNCTUATION0, "%_0", "%_0", "%_0", "0", "0", "0", "0", "0", "0", "0", "0Aa", "0A", "0a"),
+	(PUNCTUATION1, PUNCTUATION1, PUNCTUATION1, " 1", " 1", " 1", "1", "1AaBbCc", "1ABC", "1abc", "1Aa", "1A", "1a", "1Bb", "1B", "1b"),
+	("abc2ABC", "ABC2", "abc2", "abc2ABC", "ABC2", "abc2", "2", "2DdEeFf", "2DEF", "2def", "2Bb", "2B", "2b", "2Cc", "2C", "2c"),
+	("def3DEF", "DEF3", "def3", "def3DEF", "DEF3", "def3", "3", "3", "3", "3", "3Cc", "3C", "3c", "3Dd", "3D", "3d"),
+	("ghi4GHI", "GHI4", "ghi4", "ghi4GHI", "GHI4", "ghi4", "4", "4", "4", "4", "4Dd", "4D", "4d", "4Ee", "4E", "4e"),
+	("jkl5JKL", "JKL5", "jkl5", "jkl5JKL", "JKL5", "jkl5", "5", "5", "5", "5", "5Ee", "5E", "5e", "5Ff", "5F", "5f"),
+	("mno6MNO", "MNO6", "mno6", "mno6MNO", "MNO6", "mno6", "6", "6", "6", "6", "6Ff", "6F", "6f", "6", "6", "6"),
+	("pqrs7PQRS", "PQRS7", "pqrs7", "pqrs7PQRS", "PQRS7", "pqrs7", "7", "7", "7", "7", "7", "7", "7", "7", "7", "7"),
+	("tuv8TUV", "TUV8", "tuv8", "tuv8TUV", "TUV8", "tuv8", "8", "8", "8", "8", "8", "8", "8", "8", "8", "8"),
+	("wxyz9WXYZ", "WXYZ9", "wxyz9", "wxyz9WXYZ", "WXYZ9", "wxyz9", "9", "9", "9", "9", "9", "9", "9", "9", "9", "9")
 )
 
 LOCALES = {
@@ -218,17 +219,7 @@ class NumericalTextInput:
 					mode = "Search"
 				if isinstance(mapping, str):  # NOTE: Legacy interface for previous and deprecated versions of NumericalTextInput.
 					mode = mapping
-			index = MODES.get(str(mode).upper(), 0)
-			self.mapping = []
-			for num in range(0, 10):
-				self.mapping.append((MAPPINGS[num][index]))
-			locale = LOCALES.get(language.getLanguage(), None)
-			if locale is not None and index in range(0, 6):
-				index = index % 3
-				for num in range(0, 10):
-					if locale[num][index] is not None:
-						self.mapping[num] = locale[num][index]
-			self.mapping = tuple(self.mapping)
+			self.setMode(mode)
 		# The key mapping lists naturally restricts character input to
 		# the listed characters, this restriction is not enforced for
 		# external keyboard input!
@@ -236,6 +227,19 @@ class NumericalTextInput:
 		# print("[NumericalTextInput] DEBUG: Mode='%s', Index=%d, Character set: '%s'" % (mode, index, "".join(sorted(self.useableChars))))
 		self.lastKey = -1
 		self.pos = -1
+
+	def setMode(self, mode):
+		index = MODES.get(str(mode).upper(), 0)
+		self.mapping = []
+		for num in range(10):
+			self.mapping.append((MAPPINGS[num][index]))
+		locale = LOCALES.get(international.getLocale(), None)
+		if locale is not None and index in list(range(6)):
+			index = index % 3
+			for num in range(10):
+				if locale[num][index] is not None:
+					self.mapping[num] = locale[num][index]
+		self.mapping = tuple(self.mapping)
 
 	def timeout(self):
 		if self.lastKey != -1:
