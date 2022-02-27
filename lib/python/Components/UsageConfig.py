@@ -148,6 +148,12 @@ def InitUsageConfig():
 		("intermediate", _("Advanced")),
 		("expert", _("Expert"))])
 
+	config.usage.setupShowDefault = ConfigSelection(default="newline", choices=[
+		("", _("Don't show default")),
+		("spaces", _("Show default after description")),
+		("newline", _("Show default on new line"))
+	])
+
 	config.usage.startup_to_standby = ConfigSelection(default="no", choices=[
 		("no", _("no")),
 		("yes", _("yes")),
