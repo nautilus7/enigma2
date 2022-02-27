@@ -3,22 +3,78 @@ installdir = $(pkglibdir)/python/Components
 SUBDIRS = Sources Converter Renderer
 
 install_PYTHON = \
-	ActionMap.py PerServiceDisplay.py \
-	Button.py HTMLComponent.py ProgressBar.py TimerList.py config.py        \
-	ServiceList.py VariableText.py                                          \
-	ConfigList.py VariableValue.py                                          \
-	Label.py ServiceScan.py VolumeBar.py VolumeControl.py                   \
-	GUIComponent.py MenuList.py __init__.py MovieList.py                    \
-	InputDevice.py ServicePosition.py SetupDevices.py Harddisk.py           \
-	AVSwitch.py Network.py RFmod.py DiskInfo.py NimManager.py Lcd.py        \
-	EpgList.py ScrollLabel.py Timezones.py Language.py HelpMenuList.py      \
-	BlinkingPixmap.py Pixmap.py ConditionalWidget.py Slider.py              \
-	PluginList.py PluginComponent.py RecordingConfig.py About.py UsageConfig.py \
-	FIFOList.py ServiceEventTracker.py Input.py TimerSanityCheck.py FileList.py \
-	MultiContent.py MediaPlayer.py TunerInfo.py VideoWindow.py ChoiceList.py \
-	Element.py Playlist.py ParentalControl.py International.py \
-	Opkg.py SelectionList.py Scanner.py SystemInfo.py PackageInfo.py \
-	Task.py Console.py ResourceManager.py TuneTest.py \
-	Keyboard.py Sensors.py FanControl.py HdmiCec.py RcModel.py \
-	Netlink.py InputHotplug.py LocaleSelection.py \
-	ImportChannels.py
+	__init__.py \
+	About.py \
+	ActionMap.py \
+	AVSwitch.py \
+	BlinkingPixmap.py \
+	Button.py \
+	ChoiceList.py \
+	Clock.py \
+	ConditionalWidget.py \
+	config.py \
+	ConfigList.py \
+	Console.py \
+	DiskInfo.py \
+	Element.py \
+	EpgList.py \
+	FanControl.py \
+	FIFOList.py \
+	FileList.py \
+	GUIComponent.py \
+	Harddisk.py \
+	HdmiCec.py \
+	HelpMenuList.py \
+	HTMLComponent.py \
+	ImportChannels.py \
+	Input.py \
+	InputDevice.py \
+	InputHotplug.py \
+	International.py \
+	Keyboard.py \
+	Label.py \
+	Language.py \
+	Lcd.py \
+	MediaPlayer.py \
+	MenuList.py \
+	MovieList.py \
+	MultiContent.py \
+	Netlink.py \
+	Network.py \
+	NimManager.py \
+	Opkg.py \
+	PackageInfo.py \
+	ParentalControl.py \
+	PerServiceDisplay.py \
+	Pixmap.py \
+	Playlist.py \
+	PluginComponent.py \
+	PluginList.py \
+	ProgressBar.py \
+	RcModel.py \
+	RecordingConfig.py \
+	ResourceManager.py \
+	RFmod.py \
+	Scanner.py \
+	ScrollLabel.py \
+	SelectionList.py \
+	Sensors.py \
+	ServiceEventTracker.py \
+	ServiceList.py \
+	ServicePosition.py \
+	ServiceScan.py \
+	SetupDevices.py \
+	Slider.py \
+	SystemInfo.py \
+	Task.py \
+	TimerList.py \
+	TimerSanityCheck.py \
+	Timezones.py \
+	TunerInfo.py \
+	TuneTest.py \
+	UsageConfig.py \
+	VariableText.py \
+	VariableValue.py \
+	VideoWindow.py \
+	VolumeBar.py \
+	VolumeControl.py

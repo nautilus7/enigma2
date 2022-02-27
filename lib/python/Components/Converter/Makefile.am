@@ -1,11 +1,45 @@
 installdir = $(pkglibdir)/python/Components/Converter
 
 install_PYTHON = \
-	__init__.py ClockToText.py Converter.py EventName.py StaticText.py EventTime.py \
-	Poll.py RemainingToText.py StringList.py ServiceName.py FrontendInfo.py ServiceInfo.py \
-	ConditionalShowHide.py ServicePosition.py ValueRange.py RdsInfo.py Streaming.py Streaming2.py \
-	StaticMultiList.py ServiceTime.py MovieInfo.py MenuEntryCompare.py StringListSelection.py \
-	ServiceOrbitalPosition.py CryptoInfo.py TextCase.py \
-	ValueBitTest.py TunerInfo.py ConfigEntryTest.py ClientsStreaming.py TemplatedMultiContent.py ProgressToText.py \
-	Combine.py SensorToText.py ValueToPixmap.py PliExtraInfo.py genre.py TransponderInfo.py \
-	RotorPosition.py VfdDisplay.py AnalogClock.py HddState.py
+	__init__.py \
+	AnalogClock.py \
+	ClientsStreaming.py \
+	ClockToText.py \
+	Combine.py \
+	ConditionalShowHide.py \
+	ConfigEntryTest.py \
+	Converter.py \
+	CryptoInfo.py \
+	EventName.py \
+	EventTime.py \
+	FrontendInfo.py \
+	genre.py \
+	HddState.py \
+	MenuEntryCompare.py \
+	MovieInfo.py \
+	PliExtraInfo.py \
+	Poll.py \
+	ProgressToText.py \
+	RdsInfo.py \
+	RemainingToText.py \
+	RotorPosition.py \
+	SensorToText.py \
+	ServiceInfo.py \
+	ServiceName.py \
+	ServiceOrbitalPosition.py \
+	ServicePosition.py \
+	ServiceTime.py \
+	StaticMultiList.py \
+	StaticText.py \
+	Streaming.py \
+	Streaming2.py \
+	StringList.py \
+	StringListSelection.py \
+	TemplatedMultiContent.py \
+	TextCase.py \
+	TransponderInfo.py \
+	TunerInfo.py \
+	ValueBitTest.py \
+	ValueRange.py \
+	ValueToPixmap.py \
+	VfdDisplay.py
