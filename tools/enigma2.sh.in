@@ -136,11 +136,6 @@ while : ; do
 			/etc/init.d/dbus-1 reload
 			/etc/init.d/networking start
 			/etc/init.d/avahi-daemon start
-			if [ ! -f /etc/.doNotAutoinstall ]; then
-				touch /etc/.doAutoinstall
-			else
-				rm -f /etc/.doNotAutoInstall
-			fi
 			break
 			;;
 		*)
