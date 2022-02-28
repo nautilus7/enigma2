@@ -4,7 +4,6 @@ from xml.etree.ElementTree import Element, ElementTree, fromstring
 from enigma import BT_ALPHABLEND, BT_ALPHATEST, BT_HALIGN_CENTER, BT_HALIGN_LEFT, BT_HALIGN_RIGHT, BT_KEEP_ASPECT_RATIO, BT_SCALE, BT_VALIGN_BOTTOM, BT_VALIGN_CENTER, BT_VALIGN_TOP, addFont, eLabel, ePixmap, ePoint, eRect, eSize, eWindow, eWindowStyleManager, eWindowStyleSkinned, getDesktop, gFont, getFontFaces, gMainDC, gRGB , setListBoxScrollbarStyle
 
 from Components.config import ConfigSubsection, ConfigText, config
-from Components.RcModel import rc_model
 from Components.SystemInfo import SystemInfo
 from Components.Sources.Source import ObsoleteSource
 from Tools.Directories import SCOPE_LCDSKIN, SCOPE_GUISKIN, SCOPE_FONTS, SCOPE_SKINS, fileReadXML, resolveFilename
@@ -411,8 +410,8 @@ def loadPixmap(path, desktop, width=0, height=0):  # Shouldn't this be size?
 	option = path.find("#")
 	if option != -1:
 		path = path[:option]
-	if not rc_model.rcIsDefault() and basename(path) in ("rc.png", "rc0.png", "rc1.png", "rc2.png", "oldrc.png"):
-		path = rc_model.getRcImg()
+	if basename(path) in ("rc.png", "rc0.png", "rc1.png", "rc2.png", "oldrc.png"):
+		path = SystemInfo["RCImage"]
 	pixmap = LoadPixmap(path, desktop, None, width, height)
 	if pixmap is None:
 		raise SkinError("Pixmap file '%s' not found" % path)

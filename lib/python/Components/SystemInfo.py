@@ -1,8 +1,11 @@
 import re
+from os.path import isfile, join as pathjoin
 
 from enigma import Misc_Options, eDVBCIInterfaces, eDVBResourceManager, eGetEnigmaDebugLvl
-from Tools.Directories import SCOPE_PLUGINS, fileCheck, fileExists, fileHas, pathExists, resolveFilename
+from Tools.Directories import SCOPE_PLUGINS, SCOPE_SKINS, fileCheck, fileExists, fileHas, fileReadXML, pathExists, resolveFilename
 from Tools.HardwareInfo import HardwareInfo
+
+MODULE_NAME = __name__.split(".")[-1]
 
 SystemInfo = {}
 
@@ -41,7 +44,26 @@ def getBootdevice():
 	return dev
 
 
+def getRCName():
+	# Workaround since RCNAME is not injected during the build process
+	remotes = fileReadXML(resolveFilename(SCOPE_SKINS, "remotes.xml"), source=MODULE_NAME)
+	if remotes:
+		for remote in remotes.findall("remote"):
+			model = remote.attrib.get("model")
+			if model == SystemInfo["model"]:
+				return remote.attrib.get("codeName")
+	return "dmm1"
+
+
+def getRCFile(ext):
+	filename = resolveFilename(SCOPE_SKINS, pathjoin("remotes", "%s.%s" % (SystemInfo["rcname"], ext)))
+	if not isfile(filename):
+		filename = resolveFilename(SCOPE_SKINS, pathjoin("remotes", "dmm1.%s" % ext))
+	return filename
+
+
 model = HardwareInfo().get_device_model()
+SystemInfo["model"] = model
 SystemInfo["InDebugMode"] = eGetEnigmaDebugLvl() >= 4
 SystemInfo["CommonInterface"] = model in ("h9combo", "h9combose", "h10","pulse4kmini") and 1 or eDVBCIInterfaces.getInstance().getNumOfSlots()
 SystemInfo["CommonInterfaceCIDelay"] = fileCheck("/proc/stb/tsmux/rmx_delay")
@@ -93,6 +115,9 @@ SystemInfo["3DZNorm"] = fileCheck("/proc/stb/fb/znorm") or fileCheck("/proc/stb/
 SystemInfo["Blindscan_t2_available"] = fileCheck("/proc/stb/info/vumodel") and model.startswith("vu")
 SystemInfo["OSDAnimation"] = fileCheck("/proc/stb/fb/animation_mode")
 SystemInfo["RcTypeChangable"] = not(model.startswith("et8500") or model.startswith("et7")) and pathExists("/proc/stb/ir/rc/type")
+SystemInfo["rcname"] = getRCName()
+SystemInfo["RCImage"] = getRCFile("png")
+SystemInfo["RCMapping"]	= getRCFile("xml")
 SystemInfo["HasFullHDSkinSupport"] = model not in ("et4000", "et5000", "sh1", "hd500c", "hd1100", "xp1000", "lc")
 SystemInfo["HasBypassEdidChecking"] = fileCheck("/proc/stb/hdmi/bypass_edid_checking")
 SystemInfo["HasColorspace"] = fileCheck("/proc/stb/video/hdmi_colorspace")

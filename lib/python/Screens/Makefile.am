@@ -41,7 +41,6 @@ install_PYTHON = \
 	PiPSetup.py \
 	PluginBrowser.py \
 	PVRState.py \
-	Rc.py \
 	RdsDisplay.py \
 	RecordPaths.py \
 	Satconfig.py \

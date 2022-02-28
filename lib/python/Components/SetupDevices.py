@@ -1,16 +1,8 @@
-from Components.config import ConfigOnOff, ConfigSelection, ConfigSubsection, config
-from Components.Keyboard import keyboard
+from Components.config import ConfigOnOff, ConfigSubsection, config
 
 
 def InitSetupDevices():
 	config.osd = ConfigSubsection()
-
-	def keyboardNotifier(configElement):
-		keyboard.activateKeyboardMap(configElement.index)
-
-	config.keyboard = ConfigSubsection()
-	config.keyboard.keymap = ConfigSelection(default=keyboard.getDefaultKeyboardMap(), choices=keyboard.getKeyboardMaplist())
-	config.keyboard.keymap.addNotifier(keyboardNotifier)
 
 	config.parental = ConfigSubsection()
 	config.parental.lock = ConfigOnOff(default=False)

@@ -1,4 +1,4 @@
-SUBDIRS = countries display fonts extensions keymaps skin_default rc_models hw_info
+SUBDIRS = countries display fonts extensions keymaps remotes skin_default hw_info
 
 dist_pkgdata_DATA = \
 	black.mvi \
@@ -14,7 +14,7 @@ dist_pkgdata_DATA = \
 	otv_011a0000_0002_07d4.dict \
 	otv_06180000_1000_0011.dict \
 	otv_06400000_00a9_0003.dict \
-	rcpositions.xml \
+	remotes.xml \
 	setup.xml \
 	skin_subtitles.xml \
 	startwizard.xml \

@@ -24,7 +24,6 @@ install_PYTHON = \
 	GUIComponent.py \
 	Harddisk.py \
 	HdmiCec.py \
-	HelpMenuList.py \
 	HTMLComponent.py \
 	ImportChannels.py \
 	Input.py \
@@ -51,7 +50,6 @@ install_PYTHON = \
 	PluginComponent.py \
 	PluginList.py \
 	ProgressBar.py \
-	RcModel.py \
 	RecordingConfig.py \
 	ResourceManager.py \
 	RFmod.py \

@@ -1,0 +1,89 @@
+<remotes>
+	<remote model="dual" rcType="0" codeName="qviart5" displayName="Dual" />
+	<remote model="fusionhd" rcType="0" codeName="fusionhd" displayName="Fusion HD" />
+	<remote model="fusionhdse" rcType="0" codeName="fusionhd" displayName="Fusion HD SE" />
+	<remote model="galaxy4k" rcType="0" codeName="revo" displayName="Galaxy 4K" />
+	<remote model="gbquad4k" rcType="0" codeName="gb3" displayName="GigaBlue Quad 4K" />
+	<remote model="gbtrio4k" rcType="0" codeName="gb3" displayName="GigaBlue Trio 4K" />
+	<remote model="gbue4k" rcType="0" codeName="gb3" displayName="GigaBlue UHD UE 4K - Old Model" />
+	<remote model="gbue4k" rcType="0" codeName="gb4" displayName="GigaBlue UHD UE 4K - New Model" />
+	<remote model="lunix" rcType="0" codeName="qviart1" displayName="Lunix" />
+	<remote model="lunix34k" rcType="0" codeName="qviart1" displayName="Lunix 3 4K" />
+	<remote model="lunix4k" rcType="0" codeName="qviart3" displayName="Lunix 4K" />
+	<remote model="osmega" rcType="0" codeName="xcore3" displayName="OS Mega" />
+	<remote model="osmini" rcType="0" codeName="xcore3" displayName="OS Mini" />
+	<remote model="osmini4k" rcType="0" codeName="edision3" displayName="OS Mini 4K" />
+	<remote model="osminiplus" rcType="0" codeName="xcore3" displayName="OS Mini Plus" />
+	<remote model="osmio4k" rcType="0" codeName="edision3" displayName="OS Mio 4K" />
+	<remote model="osmio4kplus" rcType="0" codeName="edision3" displayName="OS Mio 4K Plus" />
+	<remote model="osnino" rcType="0" codeName="edision1" displayName="OS Nino" />
+	<remote model="osninoplus" rcType="0" codeName="edision2" displayName="OS Nino Plus" />
+	<remote model="osninopro" rcType="0" codeName="edision2" displayName="OS Nino Pro" />
+	<remote model="pulse4k" rcType="30" codeName="abcom" displayName="Pulse 4K" />
+	<remote model="pulse4kmini" rcType="30" codeName="abcom" displayName="Pulse 4K MINI" />
+	<remote model="purehd" rcType="0" codeName="fusionhd" displayName="Pure HD" />
+	<remote model="purehdse" rcType="0" codeName="fusionhd" displayName="Pure HD SE" />
+	<remote model="revo4k" rcType="0" codeName="revo" displayName="Revo 4K" />
+	<remote model="sf8008" rcType="0" codeName="sf8008" displayName="SF8008" />
+	<remote model="sf8008m" rcType="0" codeName="sf8008" displayName="SF8008m" />
+	<remote model="sfx6008" rcType="0" codeName="octagon1" displayName="sfx6008" />
+	<remote model="spycat" rcType="0" codeName="xcore1" displayName="Spycat" />
+	<remote model="spycatmini" rcType="0" codeName="xcore1" displayName="Spycat Mini" />
+	<remote model="spycatminiplus" rcType="0" codeName="xcore1" displayName="Spycat Mini Plus" />
+	<remote model="ustym4kpro" rcType="0" codeName="uclan1" displayName="Ustym 4K Pro" />
+	<remote model="vuduo" rcType="0" codeName="vu" displayName="VU+ DUO" />
+	<remote model="vuduo2" rcType="0" codeName="vu3" displayName="VU+ DUO 2" />
+	<remote model="vuduo4k" rcType="0" codeName="vu4" displayName="VU+ DUO 4K" />
+	<remote model="vuduo4kse" rcType="0" codeName="vu4" displayName="VU+ DUO 4K SEe" />
+	<remote model="vusolo" rcType="0" codeName="vu" displayName="VU+ Solo" />
+	<remote model="vusolo2" rcType="0" codeName="vu" displayName="VU+ Solo 2" />
+	<remote model="vusolo4k" rcType="0" codeName="vu" displayName="VU+ Solo 4K" />
+	<remote model="vusolose" rcType="0" codeName="vu" displayName="VU+ Solo SE" />
+	<remote model="vuultimo" rcType="0" codeName="vu2" displayName="VU+ Ultimo" />
+	<remote model="vuultimo4k" rcType="0" codeName="vu" displayName="VU+ Ultimo 4K" />
+	<remote model="vuuno" rcType="0" codeName="vu" displayName="VU+ UNO" />
+	<remote model="vuuno4k" rcType="0" codeName="vu" displayName="VU+ UNO 4K" />
+	<remote model="vuuno4kse" rcType="0" codeName="vu4" displayName="VU+ UNO 4K SEe" />
+	<remote model="vuzero" rcType="0" codeName="vu" displayName="VU+ Zero" />
+	<remote model="vuzero4k" rcType="0" codeName="vu4" displayName="VU+ Zero 4K" />
+	<remote model="" rcType="4" codeName="#" displayName="Dream MultiMedia Normal" />
+	<remote model="et9x00" rcType="5" codeName="et9x00" displayName="Xtrend ET9X00" />
+	<remote model="" rcType="6" codeName="dmm1" displayName="Dream MultiMedia Advanced" />
+	<remote model="et5x00" rcType="7" codeName="et6x00" displayName="Xtrend ET5X00" />
+	<remote model="et6x00" rcType="7" codeName="et6x00" displayName="Xtrend ET6X00" />
+	<remote model="et8000" rcType="9" codeName="et8000" displayName="Xtrend ET8000" />
+	<remote model="et10000" rcType="9" codeName="et8000" displayName="Xtrend ET10000" />
+	<remote model="et13000" rcType="9" codeName="et6x00" displayName="Xtrend ET13000" />
+	<remote model="et4x00" rcType="13" codeName="et4x00" displayName="Xtrend ET4X00" />
+	<remote model="et7x00" rcType="16" codeName="et7x00" displayName="Xtrend ET7X00" />
+	<remote model="et8500" rcType="16" codeName="et8000" displayName="Xtrend ET8500" />
+	<remote model="hd51" rcType="16" codeName="hd1100" displayName="Mutant HD51" />
+	<remote model="vs1000" rcType="16" codeName="hd1100" displayName="VS1000" />
+	<remote model="vs1500" rcType="16" codeName="hd1100" displayName="VS1500" />
+	<remote model="vipercombo" rcType="18" codeName="amiko2" displayName="Viper Combo" />
+	<remote model="vipercombohdd" rcType="18" codeName="amiko1" displayName="Viper Combo HDD" />
+	<remote model="viperslim" rcType="18" codeName="amiko2" displayName="Viper Slim" />
+	<remote model="vipert2c" rcType="18" codeName="amiko2" displayName="Viper T2C" />
+	<remote model="lc" rcType="20" codeName="zgemma2" displayName="Sh1 / Lc" />
+	<remote model="sh1" rcType="20" codeName="zgemma1" displayName="AirDigital Zgemma Star S/2S/H1/H2" />
+	<remote model="h3" rcType="21" codeName="zgemma3" displayName="AirDigital Zgemma H3" />
+	<remote model="h4" rcType="21" codeName="zgemma3" displayName="AirDigital Zgemma H4" />
+	<remote model="h5" rcType="21" codeName="zgemma3" displayName="AirDigital Zgemma H5" />
+	<remote model="h6" rcType="21" codeName="zgemma3" displayName="AirDigital Zgemma H6" />
+	<remote model="h7" rcType="21" codeName="zgemma3" displayName="AirDigital Zgemma H7 - Old model" />
+	<remote model="i55" rcType="22" codeName="zgemma5" displayName="AirDigital Zgemma i55" />
+	<remote model="h8" rcType="25" codeName="zgemma3" displayName="AirDigital Zgemma H8" />
+	<remote model="h9" rcType="25" codeName="zgemma3" displayName="AirDigital Zgemma H9 - Old model" />
+	<remote model="i55plus" rcType="25" codeName="zgemma3" displayName="AirDigital Zgemma i55 Plus - Old model" />
+	<remote model="hd66se" rcType="27" codeName="hd66se" displayName="AX/Mutant HD66se" />
+	<remote model="multibox" rcType="27" codeName="maxytec1" displayName="MultiBox" />
+	<remote model="multiboxse" rcType="27" codeName="maxytec1" displayName="MultiBox SE" />
+	<remote model="h7" rcType="28" codeName="zgemma3" displayName="AirDigital Zgemma H7 - New model" />
+	<remote model="h9" rcType="28" codeName="zgemma6" displayName="AirDigital Zgemma H9 - New model" />
+	<remote model="h9combo" rcType="28" codeName="zgemma3" displayName="AirDigital Zgemma H9 Combo" />
+	<remote model="h9combose" rcType="28" codeName="zgemma3" displayName="AirDigital Zgemma H9 Combo SE" />
+	<remote model="h9se" rcType="28" codeName="zgemma3" displayName="AirDigital Zgemma H9 SE" />
+	<remote model="h10" rcType="28" codeName="zgemma7" displayName="AirDigital Zgemma H10" />
+	<remote model="h11" rcType="28" codeName="zgemma3" displayName="AirDigital Zgemma H11" />
+	<remote model="sf4008" rcType="501" codeName="sf3038" displayName="Octagon SF4008" />
+</remotes>
