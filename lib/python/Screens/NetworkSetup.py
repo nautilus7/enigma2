@@ -1,22 +1,29 @@
 import os
-from Screens.Screen import Screen
-from Screens.MessageBox import MessageBox
-from Screens.HelpMenu import HelpableScreen
+import string
+from errno import ETIMEDOUT
+from random import Random
+
+from Components.ActionMap import ActionMap, HelpableActionMap, NumberActionMap
+from Components.config import ConfigIP, ConfigPassword, ConfigSelection, ConfigText, ConfigYesNo, NoSave, config, getConfigListEntry
+from Components.ConfigList import ConfigListScreen
+from Components.Label import Label, MultiColorLabel
+from Components.MenuList import MenuList
 from Components.Network import iNetwork
-from Components.Sources.StaticText import StaticText
+from Components.Pixmap import MultiPixmap, Pixmap
+from Components.PluginComponent import plugins
 from Components.Sources.Boolean import Boolean
 from Components.Sources.List import List
-from Components.Label import Label, MultiColorLabel
-from Components.Pixmap import Pixmap, MultiPixmap
-from Components.MenuList import MenuList
-from Components.config import config, ConfigYesNo, ConfigIP, NoSave, ConfigText, ConfigPassword, ConfigSelection, getConfigListEntry
-from Components.ConfigList import ConfigListScreen
-from Components.PluginComponent import plugins
-from Components.ActionMap import ActionMap, NumberActionMap, HelpableActionMap
-from Tools.Directories import resolveFilename, SCOPE_PLUGINS, SCOPE_CURRENT_SKIN
-from Tools.LoadPixmap import LoadPixmap
+from Components.Sources.StaticText import StaticText
+
+from enigma import eConsoleAppContainer, eTimer
+
 from Plugins.Plugin import PluginDescriptor
-from enigma import eTimer
+from Tools.Directories import SCOPE_CURRENT_SKIN, SCOPE_PLUGINS, resolveFilename
+from Tools.LoadPixmap import LoadPixmap
+from Screens.HelpMenu import HelpableScreen
+from Screens.MessageBox import MessageBox
+from Screens.Screen import Screen
+from Screens.Setup import Setup
 
 
 class NetworkAdapterSelection(Screen, HelpableScreen):
@@ -1381,3 +1388,69 @@ class NetworkAdapterTest(Screen):
 			pass
 		else:
 			iStatus.stopWlanConsole()
+
+
+class NetworkPassword(Setup):
+	def __init__(self, session):
+		config.network.password = NoSave(ConfigPassword(default=""))
+		Setup.__init__(self, session=session, setup="Password")
+		self["key_yellow"] = StaticText(_("Random Password"))
+		self["passwordActions"] = HelpableActionMap(self, ["ColorActions"], {
+			"yellow": (self.randomPassword, _("Create a randomly generated password"))
+		}, prio=0, description=_("Password Actions"))
+		self.user = "root"
+		self.counter = 0
+		self.timer = eTimer()
+		self.timer.callback.append(self.appClosed)
+		#self.language = "C.UTF-8"  # This is a complete hack to negate all the plugins that inappropriately change the language!!!
+
+	def keySave(self):
+		password = config.network.password.value
+		if not password:
+			print("[NetworkSetup] NetworkPassword: Error: The new password may not be blank!")
+			self.session.open(MessageBox, _("Error: The new password may not be blank!"), MessageBox.TYPE_ERROR)
+			return
+		# print("[NetworkSetup] NetworkPassword: Changing the password for '%s' to '%s'." % (self.user, password))
+		print("[NetworkSetup] NetworkPassword: Changing the password for '%s'." % self.user)
+		#self.language = environ["LANGUAGE"]  # This is a complete hack to negate all the plugins that inappropriately change the language!!!
+		#os.environ["LANGUAGE"] = "C.UTF-8"
+		self.container = eConsoleAppContainer()
+		self.container.dataAvail.append(self.dataAvail)
+		self.container.appClosed.append(self.appClosed)
+		status = self.container.execute(*("/usr/bin/passwd", "/usr/bin/passwd", self.user))
+		if status:  # If status is -1 code is already/still running, is status is -3 code can not be started!
+			self.session.open(MessageBox, _("Error %d: Unable to start 'passwd' command!") % status, MessageBox.TYPE_ERROR)
+			Setup.keySave(self)
+		else:
+			self.timer.start(3000)
+
+	def randomPassword(self):
+		passwdChars = string.ascii_letters + string.digits
+		passwdLength = 10
+		config.network.password.value = "".join(Random().sample(passwdChars, passwdLength))
+		self["config"].invalidateCurrent()
+
+	def dataAvail(self, data):
+		# print("[NetworkSetup] DEBUG NetworkPassword: data='%s'." % data)
+		if data.endswith("password: "):
+			self.container.write("%s\n" % config.network.password.value)
+			self.counter += 1
+
+	def appClosed(self, retVal=ETIMEDOUT):
+		self.timer.stop()
+		#os.environ["LANGUAGE"] = self.language  # This is a complete hack to negate all the plugins that inappropriately change the language!!!
+		if retVal:
+			if retVal == ETIMEDOUT:
+				self.container.kill()
+			print("[NetworkSetup] NetworkPassword: Error %d: Unable to change password!  (%s)" % (retVal, os.strerror(retVal)))
+			self.session.open(MessageBox, _("Error %d: Unable to change password!  (%s)") % (retVal, os.strerror(retVal)), MessageBox.TYPE_ERROR)
+		elif self.counter == 2:
+			print("[NetworkSetup] NetworkPassword: Password changed.")
+			self.session.open(MessageBox, _("Password changed."), MessageBox.TYPE_INFO, timeout=5)
+			Setup.keySave(self)
+		else:
+			print("[NetworkSetup] NetworkPassword: Error: Unexpected program interaction!")
+			self.session.open(MessageBox, _("Error: Interaction failure, unable to change password!"), MessageBox.TYPE_ERROR)
+		del self.container.dataAvail[:]
+		del self.container.appClosed[:]
+		del self.container
