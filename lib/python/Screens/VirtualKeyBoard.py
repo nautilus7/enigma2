@@ -8,12 +8,12 @@ from Components.Input import Input
 from Components.International import international
 from Components.Label import Label
 from Components.MenuList import MenuList
-from Components.MultiContent import MultiContentEntryText, MultiContentEntryPixmapAlphaBlend
+from Components.MultiContent import MultiContentEntryPixmapAlphaBlend, MultiContentEntryText
 from Components.Sources.StaticText import StaticText
 from Screens.ChoiceBox import ChoiceBox
 from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
-from Tools.Directories import SCOPE_CURRENT_SKIN, resolveFilename
+from Tools.Directories import SCOPE_GUISKIN, resolveFilename
 from Tools.LoadPixmap import LoadPixmap
 from Tools.NumericalTextInput import NumericalTextInput
 
@@ -37,7 +37,7 @@ class VirtualKeyBoardList(MenuList):
 		MenuList.__init__(self, list, enableWrapAround, eListboxPythonMultiContent)
 		font = fonts.get("VirtualKeyBoard", ("Regular", 28, 45))
 		self.l.setFont(0, gFont(font[0], font[1]))
-		self.l.setFont(1, gFont(font[0], font[1] * 5 // 9))  # Smaller font is 56% the height of bigger font
+		self.l.setFont(1, gFont(font[0], int(font[1] * 5 // 9)))  # Smaller font is 56% the height of bigger font
 		self.l.setItemHeight(font[2])
 
 
@@ -49,10 +49,44 @@ class VirtualKeyBoardEntryComponent:
 # For more information about using VirtualKeyBoard see /doc/VIRTUALKEYBOARD
 #
 class VirtualKeyBoard(Screen, HelpableScreen):
-	def __init__(self, session, title=_("Virtual KeyBoard Text:"), text="", maxSize=False, visible_width=False, type=Input.TEXT, currPos=None, allMarked=False, style=VKB_ENTER_ICON):
-		Screen.__init__(self, session)
+	skin = """
+	<screen name="VirtualKeyBoard" title="Virtual KeyBoard" position="center,center" size="770,470" resolution="1280,720" zPosition="99">
+		<widget name="prompt" position="10,10" size="750,50" font="Regular;20" transparent="1" valign="center" />
+		<eLabel position="10,80" size="750,2" backgroundColor="#00555555" />
+		<eLabel position="10,124" size="750,2" backgroundColor="#00555555" />
+		<eLabel position="10,80" size="2,45" backgroundColor="#00555555" />
+		<eLabel position="759,80" size="2,45" backgroundColor="#00555555" />
+		<widget name="text" position="15,90" size="740,25" font="Regular;20" noWrap="1" transparent="1" valign="center" />
+		<widget name="list" position="10,140" size="630,225" selectionDisabled="1" transparent="1" />
+		<widget name="mode" position="700,140" size="60,25" font="Regular;20" halign="right" transparent="1" valign="center" />
+		<widget source="key_info" render="Label" position="e-100,225" size="90,40" backgroundColor="key_back" conditional="key_info" font="Regular;20" foregroundColor="key_text" halign="center" valign="center">
+			<convert type="ConditionalShowHide" />
+		</widget>
+		<widget source="key_text" render="Label" position="e-100,275" size="90,40" backgroundColor="key_back" conditional="key_text" font="Regular;20" foregroundColor="key_text" halign="center" valign="center">
+			<convert type="ConditionalShowHide" />
+		</widget>
+		<widget source="key_help" render="Label" position="e-100,325" size="90,40" backgroundColor="key_back" font="Regular;20" conditional="key_help" foregroundColor="key_text" halign="center" valign="center">
+			<convert type="ConditionalShowHide" />
+		</widget>
+		<widget name="locale" position="10,380" size="500,25" font="Regular;20" transparent="1" valign="center" />
+		<widget source="key_red" render="Label" position="10,e-50" size="180,40" backgroundColor="key_red" font="Regular;20" foregroundColor="key_text" halign="center" valign="center">
+			<convert type="ConditionalShowHide" />
+		</widget>
+		<widget source="key_green" render="Label" position="200,e-50" size="180,40" backgroundColor="key_green" font="Regular;20" foregroundColor="key_text" halign="center" valign="center">
+			<convert type="ConditionalShowHide" />
+		</widget>
+		<widget source="key_yellow" render="Label" position="390,e-50" size="180,40" backgroundColor="key_yellow" conditional="key_yellow" font="Regular;20" foregroundColor="key_text" halign="center" valign="center">
+			<convert type="ConditionalShowHide" />
+		</widget>
+		<widget source="key_blue" render="Label" position="580,e-50" size="180,40" backgroundColor="key_blue" conditional="key_blue" font="Regular;20" foregroundColor="key_text" halign="center" valign="center">
+			<convert type="ConditionalShowHide" />
+		</widget>
+	</screen>"""
+
+	def __init__(self, session, title=_("Virtual KeyBoard Text:"), text="", maxSize=False, visible_width=False, type=Input.TEXT, currPos=None, allMarked=False, style=VKB_ENTER_ICON, windowTitle=None):
+		Screen.__init__(self, session, mandatoryWidgets=["prompt", "text", "list"])
 		HelpableScreen.__init__(self)
-		self.setTitle(_("Virtual keyboard"))
+		self.setTitle(_("Virtual KeyBoard") if windowTitle is None else windowTitle)
 		prompt = title  # Title should only be used for screen titles!
 		greenLabel, self.green = {
 			VKB_DONE_ICON: ("Done", "ENTERICON"),
@@ -66,42 +100,41 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 			VKB_SAVE_TEXT: ("Save", _("Save")),
 			VKB_SEARCH_TEXT: ("Search", _("Search"))
 		}.get(style, ("Enter", "ENTERICON"))
-		self.bg = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_bg.png"))  # Legacy support only!
-		self.bg_l = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_bg_l.png"))
-		self.bg_m = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_bg_m.png"))
-		self.bg_r = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_bg_r.png"))
-		self.sel_l = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_sel_l.png"))
-		self.sel_m = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_sel_m.png"))
-		self.sel_r = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_sel_r.png"))
-		key_red_l = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_red_l.png"))
-		key_red_m = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_red_m.png"))
-		key_red_r = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_red_r.png"))
-		key_green_l = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_green_l.png"))
-		key_green_m = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_green_m.png"))
-		key_green_r = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_green_r.png"))
-		key_yellow_l = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_yellow_l.png"))
-		key_yellow_m = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_yellow_m.png"))
-		key_yellow_r = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_yellow_r.png"))
-		key_blue_l = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_blue_l.png"))
-		key_blue_m = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_blue_m.png"))
-		key_blue_r = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_blue_r.png"))
-		key_backspace = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_backspace.png"))
-		key_clear = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_clear.png"))
-		key_delete = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_delete.png"))
-		key_enter = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_enter.png"))
-		key_exit = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_exit.png"))
-		key_first = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_first.png"))
-		key_last = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_last.png"))
-		key_left = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_left.png"))
-		key_locale = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_locale.png"))
-		key_right = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_right.png"))
-		key_shift = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_shift.png"))
-		key_shift0 = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_shift0.png"))
-		key_shift1 = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_shift1.png"))
-		key_shift2 = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_shift2.png"))
-		key_shift3 = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_shift3.png"))
-		key_space = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_space.png"))
-		key_space_alt = LoadPixmap(path=resolveFilename(SCOPE_CURRENT_SKIN, "buttons/vkey_space_alt.png"))
+		self.bg_l = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_bg_l.png"))
+		self.bg_m = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_bg_m.png"))
+		self.bg_r = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_bg_r.png"))
+		self.sel_l = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_sel_l.png"))
+		self.sel_m = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_sel_m.png"))
+		self.sel_r = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_sel_r.png"))
+		key_red_l = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_red_l.png"))
+		key_red_m = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_red_m.png"))
+		key_red_r = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_red_r.png"))
+		key_green_l = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_green_l.png"))
+		key_green_m = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_green_m.png"))
+		key_green_r = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_green_r.png"))
+		key_yellow_l = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_yellow_l.png"))
+		key_yellow_m = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_yellow_m.png"))
+		key_yellow_r = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_yellow_r.png"))
+		key_blue_l = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_blue_l.png"))
+		key_blue_m = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_blue_m.png"))
+		key_blue_r = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_blue_r.png"))
+		key_backspace = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_backspace.png"))
+		key_clear = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_clear.png"))
+		key_delete = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_delete.png"))
+		key_enter = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_enter.png"))
+		key_exit = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_exit.png"))
+		key_first = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_first.png"))
+		key_last = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_last.png"))
+		key_left = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_left.png"))
+		key_locale = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_locale.png"))
+		key_right = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_right.png"))
+		key_shift = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_shift.png"))
+		key_shift0 = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_shift0.png"))
+		key_shift1 = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_shift1.png"))
+		key_shift2 = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_shift2.png"))
+		key_shift3 = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_shift3.png"))
+		key_space = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_space.png"))
+		key_space_alt = LoadPixmap(path=resolveFilename(SCOPE_GUISKIN, "buttons/vkey_space_alt.png"))
 		self.keyHighlights = {  # This is a table of cell highlight components (left, middle and right)
 			"EXIT": (key_red_l, key_red_m, key_red_r),
 			"EXITICON": (key_red_l, key_red_m, key_red_r),
@@ -511,20 +544,19 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 			"8": (self.keyNumberGlobal, _("Number or SMS style data entry")),
 			"9": (self.keyNumberGlobal, _("Number or SMS style data entry")),
 			"gotAsciiCode": (self.keyGotAscii, _("Keyboard data entry"))
-		}, -2, description=_("Virtual KeyBoard Functions"))
+		}, prio=0, description=_("Virtual KeyBoard Actions"))
 		self.lang = international.getLocale()
 		self["prompt"] = Label(prompt)
 		self["text"] = Input(text=text, maxSize=maxSize, visible_width=visible_width, type=type, currPos=len(text) if currPos is None else currPos, allMarked=allMarked)
 		self["list"] = VirtualKeyBoardList([])
 		self["mode"] = Label(_("INS"))
-		self["locale"] = Label(_("Locale") + ": " + self.lang)
+		self["locale"] = Label("%s: %s" % (_("Locale"), self.lang))
 		self["key_info"] = StaticText(_("INFO"))
 		self["key_red"] = StaticText(_("Exit"))
 		self["key_green"] = StaticText(_(greenLabel))
 		self["key_yellow"] = StaticText(_("Shift"))
 		self["key_blue"] = StaticText(self.shiftMsgs[1])
 		self["key_text"] = StaticText(_("TEXT"))
-		self["key_help"] = StaticText(_("HELP"))
 		width, height = parameters.get("VirtualKeyBoard", (45, 45))
 		if self.bg_l is None or self.bg_m is None or self.bg_r is None:
 			self.width = width
@@ -554,8 +586,14 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 		self.sms = NumericalTextInput(self.smsGotChar)
 		self.smsChar = None
 		self.setLocale()
-		self.onExecBegin.append(self.setKeyboardModeAscii)
-		self.onLayoutFinish.append(self.buildVirtualKeyBoard)
+		if self.setKeyboardModeAscii not in self.onExecBegin:
+			self.onExecBegin.append(self.setKeyboardModeAscii)
+		if self.layoutFinished not in self.onLayoutFinish:
+			self.onLayoutFinish.append(self.layoutFinished)
+
+	def layoutFinished(self):
+		self["list"].instance.allowNativeKeys(False)
+		self.buildVirtualKeyBoard()
 
 	def arabic(self, base):
 		keyList = deepcopy(base)
@@ -881,7 +919,7 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 			self.location = _("United States")
 			self.keyList = self.english
 		self.shiftLevel = 0
-		self["locale"].setText(_("Locale") + ": " + self.lang + "  (" + self.language + " - " + self.location + ")")
+		self["locale"].setText("%s: %s  (%s - %s)" % (_("Locale"), self.lang, self.language, self.location))
 
 	def buildVirtualKeyBoard(self):
 		self.shiftLevels = len(self.keyList)  # Check the current shift level is available / valid in this layout.
@@ -1028,7 +1066,7 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 		text = self.keyList[self.shiftLevel][self.selectedKey // self.keyboardWidth][self.selectedKey % self.keyboardWidth]
 		cmd = self.cmds.get(text.upper(), None)
 		if cmd is None:
-			self['text'].char(text)
+			self["text"].char(text)
 		else:
 			exec(cmd)
 		if text not in ("SHIFT", "SHIFTICON") and self.shiftHold != -1:
@@ -1043,7 +1081,7 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 	def localeMenu(self):
 		languages = []
 		for locale, data in self.locales.items():
-			languages.append((data[0] + "  -  " + data[1] + "  (" + locale + ")", locale))
+			languages.append(("%s  -  %s  (%s)" % (data[0], data[1], locale), locale))
 		languages = sorted(languages)
 		index = 0
 		default = 0
@@ -1095,8 +1133,8 @@ class VirtualKeyBoard(Screen, HelpableScreen):
 		self["text"].deleteForward()
 
 	def eraseAll(self):
-		self['text'].deleteAllChars()
-		self['text'].update()
+		self["text"].deleteAllChars()
+		self["text"].update()
 
 	def cursorFirst(self):
 		self["text"].home()
