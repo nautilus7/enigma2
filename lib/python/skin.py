@@ -114,12 +114,6 @@ def InitSkins():
 		getDesktop(GUI_SKIN_ID).resize(eSize(resolution[0], resolution[1]))
 	runCallbacks = True
 
-# Temporary entry point for older versions of StartEnigma.py.
-#
-
-
-def loadSkinData(desktop):
-	InitSkins()
 
 # Method to load a skin XML file into the skin data structures.
 #

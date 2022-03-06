@@ -61,7 +61,6 @@ install_PYTHON = \
 	ServiceList.py \
 	ServicePosition.py \
 	ServiceScan.py \
-	SetupDevices.py \
 	Slider.py \
 	SystemInfo.py \
 	Task.py \

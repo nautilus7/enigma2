@@ -235,6 +235,10 @@ def resolveFilename(scope, base="", path_prefix=None):
 	return path
 
 
+def InitDefaultPaths():
+	resolveFilename(SCOPE_CONFIG)
+
+
 def fileReadLine(filename, default=None, source=DEFAULT_MODULE_NAME, debug=False):
 	line = None
 	try:
@@ -504,16 +508,6 @@ def getRecordingFilename(basename, dirname=None):
 			return path
 		path += "_%03d" % i
 		i += 1
-
-# This is clearly a hack:
-#
-
-
-def InitFallbackFiles():
-	resolveFilename(SCOPE_CONFIG, "userbouquet.favourites.tv")
-	resolveFilename(SCOPE_CONFIG, "bouquets.tv")
-	resolveFilename(SCOPE_CONFIG, "userbouquet.favourites.radio")
-	resolveFilename(SCOPE_CONFIG, "bouquets.radio")
 
 # Returns a list of tuples containing pathname and filename matching the given pattern
 # Example-pattern: match all txt-files: ".*\.txt$"
