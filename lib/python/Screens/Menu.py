@@ -1,25 +1,24 @@
-from Screens.Screen import Screen
-from Screens.MessageBox import MessageBox
-from Screens.ParentalControlSetup import ProtectedScreen
-from Components.Sources.List import List
-from Components.ActionMap import NumberActionMap, ActionMap
-from Components.Sources.StaticText import StaticText
-from Components.config import configfile
-from Components.PluginComponent import plugins
-from Components.NimManager import nimmanager
-from Components.config import config, ConfigDictionarySet, NoSave
-from Components.SystemInfo import SystemInfo
-from Tools.BoundFunction import boundFunction
-from Plugins.Plugin import PluginDescriptor
-from Tools.Directories import resolveFilename, SCOPE_SKIN
+from xml.etree.ElementTree import parse
+
 from enigma import eTimer
 
-import xml.etree.ElementTree
-
+from Components.ActionMap import NumberActionMap, ActionMap
+from Components.config import ConfigDictionarySet, NoSave, config, configfile
+from Components.NimManager import nimmanager  # This is needed for conditional evaluation in "menu.xml".
+from Components.PluginComponent import plugins
+from Components.SystemInfo import SystemInfo
+from Components.Sources.List import List
+from Components.Sources.StaticText import StaticText
+from Plugins.Plugin import PluginDescriptor
+from Screens.MessageBox import MessageBox
+from Screens.ParentalControlSetup import ProtectedScreen
+from Screens.Screen import Screen
 from Screens.Setup import Setup, getSetupTitle
+from Tools.BoundFunction import boundFunction
+from Tools.Directories import resolveFilename, SCOPE_SKIN
 
-# read the menu
-mdom = xml.etree.ElementTree.parse(resolveFilename(SCOPE_SKIN, 'menu.xml'))
+# Read the menu
+mdom = parse(resolveFilename(SCOPE_SKIN, 'menu.xml'))
 
 
 class MenuUpdater:
@@ -74,10 +73,10 @@ class Menu(Screen, ProtectedScreen):
 			exec("from %s import %s" % (arg[0], arg[1].split(",")[0]))
 			self.openDialog(*eval(arg[1]))
 
-	def nothing(self): #dummy
+	def nothing(self):  # dummy
 		pass
 
-	def openDialog(self, *dialog): # in every layer needed
+	def openDialog(self, *dialog):  # in every layer needed
 		self.session.openWithCallback(self.menuClosed, *dialog)
 
 	def openSetup(self, dialog):
@@ -86,11 +85,12 @@ class Menu(Screen, ProtectedScreen):
 	def addMenu(self, destList, node):
 		requires = node.get("requires")
 		if requires:
-			if requires[0] == '!':
+			if requires[0] == "!":
 				if SystemInfo.get(requires[1:], False):
 					return
 			elif not SystemInfo.get(requires, False):
 				return
+
 		MenuTitle = _(node.get("text", "??"))
 		entryID = node.get("entryID", "undefined")
 		weight = node.get("weight", 50)
@@ -99,7 +99,7 @@ class Menu(Screen, ProtectedScreen):
 			a = boundFunction(self.session.openWithCallback, self.menuClosedWithConfigFlush, Menu, node)
 		else:
 			a = boundFunction(self.session.openWithCallback, self.menuClosed, Menu, node)
-		#TODO add check if !empty(node.childNodes)
+		# TODO add check if !empty(node.childNodes)
 		destList.append((MenuTitle, a, entryID, weight))
 
 	def menuClosedWithConfigFlush(self, *res):
@@ -117,7 +117,7 @@ class Menu(Screen, ProtectedScreen):
 	def addItem(self, destList, node):
 		requires = node.get("requires")
 		if requires:
-			if requires[0] == '!':
+			if requires[0] == "!":
 				if SystemInfo.get(requires[1:], False):
 					return
 			elif not SystemInfo.get(requires, False):
@@ -129,14 +129,14 @@ class Menu(Screen, ProtectedScreen):
 		entryID = node.get("entryID", "undefined")
 		weight = node.get("weight", 50)
 		for x in node:
-			if x.tag == 'screen':
+			if x.tag == "screen":
 				module = x.get("module")
 				screen = x.get("screen")
 
 				if screen is None:
 					screen = module
 
-				# print module, screen
+				# print(module, screen)
 				if module:
 					module = "Screens." + module
 				else:
@@ -149,10 +149,10 @@ class Menu(Screen, ProtectedScreen):
 
 				destList.append((_(item_text or "??"), boundFunction(self.runScreen, (module, screen)), entryID, weight))
 				return
-			elif x.tag == 'code':
+			elif x.tag == "code":
 				destList.append((_(item_text or "??"), boundFunction(self.execText, x.text), entryID, weight))
 				return
-			elif x.tag == 'setup':
+			elif x.tag == "setup":
 				id = x.get("id")
 				if item_text == "":
 					item_text = _(getSetupTitle(id))
@@ -168,7 +168,6 @@ class Menu(Screen, ProtectedScreen):
 	def __init__(self, session, parent):
 		self.parentmenu = parent
 		Screen.__init__(self, session)
-		self.menulength = 0
 		self["key_blue"] = StaticText("")
 		self["menu"] = List([])
 		self["menu"].enableWrapAround = True
@@ -182,25 +181,23 @@ class Menu(Screen, ProtectedScreen):
 		self.skinName.append("Menu")
 
 		ProtectedScreen.__init__(self)
-
-		self["actions"] = NumberActionMap(["OkCancelActions", "MenuActions", "NumberActions", "HelpActions", "ColorActions"],
-			{
-				"ok": self.okbuttonClick,
-				"cancel": self.closeNonRecursive,
-				"menu": self.closeRecursive,
-				"0": self.keyNumberGlobal,
-				"1": self.keyNumberGlobal,
-				"2": self.keyNumberGlobal,
-				"3": self.keyNumberGlobal,
-				"4": self.keyNumberGlobal,
-				"5": self.keyNumberGlobal,
-				"6": self.keyNumberGlobal,
-				"7": self.keyNumberGlobal,
-				"8": self.keyNumberGlobal,
-				"9": self.keyNumberGlobal,
-				"displayHelp": self.showHelp,
-				"blue": self.keyBlue,
-			})
+		self["actions"] = NumberActionMap(["OkCancelActions", "MenuActions", "NumberActions", "HelpActions", "ColorActions"], {
+			"ok": self.okbuttonClick,
+			"cancel": self.closeNonRecursive,
+			"menu": self.closeRecursive,
+			"0": self.keyNumberGlobal,
+			"1": self.keyNumberGlobal,
+			"2": self.keyNumberGlobal,
+			"3": self.keyNumberGlobal,
+			"4": self.keyNumberGlobal,
+			"5": self.keyNumberGlobal,
+			"6": self.keyNumberGlobal,
+			"7": self.keyNumberGlobal,
+			"8": self.keyNumberGlobal,
+			"9": self.keyNumberGlobal,
+			"displayHelp": self.showHelp,
+			"blue": self.keyBlue,
+		})
 		title = parent.get("title", "") or None
 		title = title and _(title) or _(parent.get("text", ""))
 		title = self.__class__.__name__ == "MenuSort" and _("Menusort (%s)") % title or title
@@ -226,15 +223,15 @@ class Menu(Screen, ProtectedScreen):
 		self["key_blue"].text = _("Edit menu") if config.usage.menu_sort_mode.value == "user" else ""
 		self.list = []
 		self.menuID = None
-		for x in self.parentmenu: #walk through the actual nodelist
+		for x in self.parentmenu:  # walk through the actual nodelist
 			if not x.tag:
 				continue
-			if x.tag == 'item':
+			if x.tag == "item":
 				item_level = int(x.get("level", 0))
 				if item_level <= config.usage.setup_level.index:
 					self.addItem(self.list, x)
 					count += 1
-			elif x.tag == 'menu':
+			elif x.tag == "menu":
 				item_level = int(x.get("level", 0))
 				if item_level <= config.usage.setup_level.index:
 					self.addMenu(self.list, x)
@@ -265,7 +262,7 @@ class Menu(Screen, ProtectedScreen):
 			plugin_list = []
 			id_list = []
 			for l in plugins.getPlugins([PluginDescriptor.WHERE_PLUGINMENU, PluginDescriptor.WHERE_EXTENSIONSMENU, PluginDescriptor.WHERE_EVENTINFO]):
-				l.id = (l.name.lower()).replace(' ', '_')
+				l.id = (l.name.lower()).replace(" ", "_")
 				if l.id not in id_list:
 					id_list.append(l.id)
 					plugin_list.append((l.name, boundFunction(l.fnc, self.session), l.id, 200))
@@ -295,11 +292,7 @@ class Menu(Screen, ProtectedScreen):
 		if config.usage.menu_show_numbers.value in ("menu&plugins", "menu") or showNumericHelp:
 			self.list = [(str(x[0] + 1) + " " + x[1][0], x[1][1], x[1][2]) for x in enumerate(self.list)]
 
-		if self.menulength != len(self.list): # updateList must only be used on a list of the same length. If length is different we call setList.
-			self["menu"].setList(self.list)
-			self.menulength = len(self.list)
-
-		self["menu"].updateList(self.list)
+		self["menu"].setList(self.list)
 
 	def keyNumberGlobal(self, number):
 		self.number = self.number * 10 + number
@@ -328,7 +321,7 @@ class Menu(Screen, ProtectedScreen):
 
 	def isProtected(self):
 		if config.ParentalControl.setuppinactive.value:
-			if config.ParentalControl.config_sections.main_menu.value and not(hasattr(self.session, 'infobar') and self.session.infobar is None):
+			if config.ParentalControl.config_sections.main_menu.value and not(hasattr(self.session, "infobar") and self.session.infobar is None):
 				return self.menuID == "mainmenu"
 			elif config.ParentalControl.config_sections.configuration.value and self.menuID == "setup":
 				return True
@@ -355,7 +348,7 @@ class Menu(Screen, ProtectedScreen):
 			if not self.sub_menu_sort.getConfigValue(entry[2], "hidden"):
 				self.list.append(entry)
 		if not self.list:
-			self.list.append(('', None, 'dummy', '10', 10))
+			self.list.append(("", None, "dummy", "10", 10))
 		self.list.sort(key=lambda listweight: int(listweight[4]))
 
 
@@ -370,14 +363,11 @@ class MenuSort(Menu):
 		self["key_blue"] = StaticText(_("Reset order (All)"))
 		self["menu"].onSelectionChanged.append(self.selectionChanged)
 
-		self["MoveActions"] = ActionMap(["WizardActions", "DirectionActions"],
-		{
+		self["MoveActions"] = ActionMap(["WizardActions", "DirectionActions"], {
 			"moveUp": boundFunction(self.moveChoosen, -1),
 			"moveDown": boundFunction(self.moveChoosen, +1),
-			}, -1
-		)
-		self["EditActions"] = ActionMap(["ColorActions"],
-		{
+		}, -1)
+		self["EditActions"] = ActionMap(["ColorActions"], {
 			"red": self.closeMenuSort,
 			"green": self.keySave,
 			"yellow": self.keyToggleShowHide,
@@ -396,7 +386,7 @@ class MenuSort(Menu):
 	def hide_show_entries(self):
 		self.list = list(self.full_list)
 		if not self.list:
-			self.list.append(('', None, 'dummy', '10', 10))
+			self.list.append(("", None, "dummy", "10", 10))
 		self.list.sort(key=lambda listweight: int(listweight[4]))
 
 	def selectionChanged(self):
@@ -467,8 +457,7 @@ class MenuSort(Menu):
 
 
 class MainMenu(Menu):
-	#add file load functions for the xml-file
-
+	# add file load functions for the xml-file
 	def __init__(self, *x):
 		self.skinName = "Menu"
 		Menu.__init__(self, *x)
