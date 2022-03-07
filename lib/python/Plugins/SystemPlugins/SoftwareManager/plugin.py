@@ -44,8 +44,6 @@ config.plugins.softwaremanager.overwriteConfigFiles = ConfigSelection(
 					("N", _("No, never")),
 					("ask", _("Always ask"))
 				], "Y")
-config.plugins.softwaremanager.onSetupMenu = ConfigYesNo(default=False)
-config.plugins.softwaremanager.onBlueButton = ConfigYesNo(default=False)
 config.plugins.softwaremanager.epgcache = ConfigYesNo(default=False)
 
 
@@ -367,8 +365,6 @@ class SoftwareManagerSetup(ConfigListScreen, Screen):
 		self.list = []
 		self.overwriteConfigfilesEntry = getConfigListEntry(_("Overwrite configuration files?"), config.plugins.softwaremanager.overwriteConfigFiles)
 		self.list.append(self.overwriteConfigfilesEntry)
-		self.list.append(getConfigListEntry(_("show softwaremanager in setup menu"), config.plugins.softwaremanager.onSetupMenu))
-		self.list.append(getConfigListEntry(_("show softwaremanager on blue button"), config.plugins.softwaremanager.onBlueButton))
 		self.list.append(getConfigListEntry(_("backup EPG cache"), config.plugins.softwaremanager.epgcache))
 
 		self["config"].list = self.list
@@ -1833,7 +1829,7 @@ def UpgradeMain(session, **kwargs):
 
 
 def startSetup(menuid):
-	if menuid == "setup" and config.plugins.softwaremanager.onSetupMenu.value:
+	if menuid == "software":
 		return [(_("Software management"), UpgradeMain, "software_manager", 50)]
 	return []
 
@@ -1845,8 +1841,4 @@ def Plugins(path, **kwargs):
 		PluginDescriptor(name=_("Software management"), description=_("Manage your receiver's software"), where=PluginDescriptor.WHERE_MENU, needsRestart=False, fnc=startSetup),
 		PluginDescriptor(name=_("Opkg"), where=PluginDescriptor.WHERE_FILESCAN, needsRestart=False, fnc=filescan)
 	]
-	if not config.plugins.softwaremanager.onSetupMenu.value and not config.plugins.softwaremanager.onBlueButton.value:
-		list.append(PluginDescriptor(name=_("Software management"), description=_("Manage your receiver's software"), where=PluginDescriptor.WHERE_PLUGINMENU, needsRestart=False, fnc=UpgradeMain))
-	if config.plugins.softwaremanager.onBlueButton.value:
-		list.append(PluginDescriptor(name=_("Software management"), description=_("Manage your receiver's software"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, needsRestart=False, fnc=UpgradeMain))
 	return list
