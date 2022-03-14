@@ -1284,7 +1284,7 @@ class ConfigClock(ConfigSequence):
 		newtime[4] = self._value[1]
 		newtime = struct_time(newtime)
 		value = strftime(config.usage.time.short.value.replace("%-I", "%_I").replace("%-H", "%_H"), newtime)
-		return value, mPos
+		return (value, mPos)
 
 
 class ConfigDate(ConfigSequence):
@@ -1354,26 +1354,32 @@ class ConfigPIN(ConfigInteger):
 class ConfigIP(ConfigSequence):
 	def __init__(self, default, auto_jump=False):
 		ConfigSequence.__init__(self, seperator=".", limits=[(0, 255), (0, 255), (0, 255), (0, 255)], default=default)
-		self.block_len = [len(str(x[1])) for x in self.limits]
-		self.marked_block = 0
+		self.autoJump = auto_jump
+		self.markedPos = 0
 		self.overwrite = True
-		self.auto_jump = auto_jump
 		self.zeroPad = False
 
 	def handleKey(self, key, callback=None):
-		if key == ACTIONKEY_LEFT:
-			if self.marked_block > 0:
-				self.marked_block -= 1
+		if key == ACTIONKEY_FIRST:
+			self.markedPos = 0
+			self.overwrite = True
+		elif key == ACTIONKEY_LEFT:
+			if self.markedPos > 0:
+				self.markedPos -= 1
 			self.overwrite = True
 		elif key == ACTIONKEY_RIGHT:
-			if self.marked_block < len(self.limits) - 1:
-				self.marked_block += 1
-			self.overwrite = True
-		elif key == ACTIONKEY_FIRST:
-			self.marked_block = 0
+			if self.markedPos < len(self.limits) - 1:
+				self.markedPos += 1
 			self.overwrite = True
 		elif key == ACTIONKEY_LAST:
-			self.marked_block = len(self.limits) - 1
+			self.markedPos = len(self.limits) - 1
+			self.overwrite = True
+		elif key in (ACTIONKEY_DELETE, ACTIONKEY_BACKSPACE):
+			self._value[self.markedPos] = 0
+			self.overwrite = True
+		elif key == ACTIONKEY_ERASE:
+			self.markedPos = 0
+			self._value = [0, 0, 0, 0]
 			self.overwrite = True
 		elif key in ACTIONKEY_NUMBERS or key == ACTIONKEY_ASCII:
 			if key == ACTIONKEY_ASCII:
@@ -1383,41 +1389,35 @@ class ConfigIP(ConfigSequence):
 				number = code - 48
 			else:
 				number = getKeyNumber(key)
-			oldvalue = self._value[self.marked_block]
+			prev = self._value[:]
 			if self.overwrite:
-				self._value[self.marked_block] = number
+				self._value[self.markedPos] = number
 				self.overwrite = False
 			else:
-				oldvalue *= 10
-				newvalue = oldvalue + number
-				if self.auto_jump and newvalue > self.limits[self.marked_block][1] and self.marked_block < len(self.limits) - 1:
+				newValue = (self._value[self.markedPos] * 10) + number
+				if self.autoJump and newValue > self.limits[self.markedPos][1] and self.markedPos < len(self.limits) - 1:
 					self.handleKey(ACTIONKEY_RIGHT, callback)
 					self.handleKey(key, callback)
 					return
 				else:
-					self._value[self.marked_block] = newvalue
-			if len(str(self._value[self.marked_block])) >= self.block_len[self.marked_block]:
+					self._value[self.markedPos] = newValue
+			if len(str(self._value[self.markedPos])) >= self.blockLen[self.markedPos]:
 				self.handleKey(ACTIONKEY_RIGHT, callback)
 			self.validate()
-			self.changed()
+			if self._value != prev:
+				self.changed()
+				if callable(callback):
+					callback()
 
 	def getMulti(self, selected):
 		(value, mBlock) = self.genText()
-		if self.enabled:
-			return ("mtext"[1 - selected:], value, mBlock)
-		else:
-			return ("text", value)
+		return ("mtext"[1 - selected:], value, mBlock) if self.enabled else ("text", value)
 
 	def genText(self):
-		value = ""
-		block_strlen = []
-		for i in self._value:
-			block_strlen.append(len(str(i)))
-			if value:
-				value += self.seperator
-			value += str(i)
-		leftPos = sum(block_strlen[:(self.marked_block)]) + self.marked_block
-		rightPos = sum(block_strlen[:(self.marked_block + 1)]) + self.marked_block
+		value = self.seperator.join([str(x) for x in self._value])
+		blockLen = [len(str(x)) for x in self._value]
+		leftPos = sum(blockLen[:self.markedPos]) + self.markedPos
+		rightPos = sum(blockLen[:self.markedPos + 1]) + self.markedPos
 		mBlock = list(range(leftPos, rightPos))
 		return (value, mBlock)
 
@@ -1770,7 +1770,7 @@ class ConfigText(ConfigElement, NumericalTextInput):
 
 	def setValue(self, value):
 		prev = self.text if hasattr(self, "text") else None
-		if isinstance(value, bytes): # DEBUG: If bytes on PY3 we can print this and then convert.
+		if isinstance(value, bytes):  # DEBUG: If bytes on PY3 we can print this and then convert.
 			try:
 				self.text = value.decode("UTF-8", errors="strict")
 			except UnicodeDecodeError:

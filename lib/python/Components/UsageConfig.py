@@ -24,6 +24,7 @@ visuallyImpairedCommentary = "NAR qad"
 
 def InitUsageConfig():
 	config.usage = ConfigSubsection()
+
 	config.usage.subnetwork = ConfigYesNo(default=True)
 	config.usage.subnetwork_cable = ConfigYesNo(default=True)
 	config.usage.subnetwork_terrestrial = ConfigYesNo(default=True)
@@ -134,6 +135,14 @@ def InitUsageConfig():
 		("off", _("Disabled")),
 		("small", _("Small")),
 		("large", _("Large"))
+	])
+	config.usage.dns = ConfigSelection(default="dhcp-router", choices=[
+		("dhcp-router", _("Router / Gateway")),
+		("custom", _("Static IP / Custom")),
+		("google", _("Google DNS")),
+		("cloudflare", _("Cloudflare DNS")),
+		("opendns-familyshield", _("OpenDNS FamilyShield")),
+		("opendns-home", _("OpenDNS Home"))
 	])
 	config.usage.enable_tt_caching = ConfigYesNo(default=True)
 	config.usage.sort_settings = ConfigYesNo(default=False)

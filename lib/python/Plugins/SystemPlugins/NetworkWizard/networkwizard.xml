@@ -44,7 +44,7 @@ self.AdapterSetupEnd(self.selectedInterface)
         <step id="confdns" nextstep="checklanstatusend">
                 <text value="Please configure or verify your Nameservers by filling out the required values.\nWhen you are ready press OK to continue." />
                 <displaytext value="Configure nameservers" />
-                <config screen="NameserverSetup" module="NetworkSetup" type="ConfigList" />
+                <config screen="DNSSettings" module="NetworkSetup" type="ConfigList" />
                 <code>
 self.clearSelectedKeys()
 self.selectKey("OK")

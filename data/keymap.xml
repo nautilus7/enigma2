@@ -293,17 +293,13 @@
 	</map>
 
 	<map context="DNSSettingsActions">
-		<key id="KEY_BACK" mapto="moveUp" flags="mr" />
-		<key id="KEY_LAST" mapto="moveUp" flags="mr" />
-		<key id="KEY_STOP" mapto="moveUp" flags="mr" />
-		<key id="KEY_PREVIOUS" mapto="moveUp" flags="mr" /><!-- Was for navigation. -->
-		<key id="KEY_PLAYPAUSE" mapto="moveDown" flags="mr" />
-		<key id="KEY_PLAY" mapto="moveDown" flags="mr" />
-		<key id="KEY_PAUSE" mapto="moveDown" flags="mr" />
-		<key id="KEY_NEXT" mapto="moveDown" flags="mr" /><!-- Was for navigation. -->
+		<key id="KEY_YELLOW" mapto="dnsAdd" flags="m" />
+		<key id="KEY_BLUE" mapto="dnsRemove" flags="m" />
+		<key id="KEY_TV" mapto="moveUp" flags="mr" />
+		<key id="KEY_RADIO" mapto="moveDown" flags="mr" />
 		<!-- Keyboard specific buttons -->
-		<key id="KEY_BACKSPACE" mapto="moveUp" flags="mr" />
-		<key id="KEY_DELETE" mapto="moveDown" flags="mr" />
+		<key id="KEY_F7" mapto="dnsAdd" flags="m" />
+		<key id="KEY_F8" mapto="dnsRemove" flags="m" />
 	</map>
 
 	<map context="LocaleSelectionActions">
