@@ -342,7 +342,7 @@ def setupDom(setup=None, plugin=None):
 			elif element.tag == "elif":
 				pass
 
-	setupFileDom = fromstring("<setupxml></setupxml>")
+	setupFileDom = fromstring("<setupxml />")
 	setupFile = resolveFilename(SCOPE_PLUGINS, pathjoin(plugin, "setup.xml")) if plugin else resolveFilename(SCOPE_SKINS, "setup.xml")
 	global domSetups, setupModTimes
 	try:
