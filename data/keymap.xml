@@ -256,7 +256,7 @@
 		<key id="KEY_BACKSPACE" mapto="backspace" flags="mr" />
 		<key id="KEY_DELETE" mapto="delete" flags="mr" />
 		<key id="KEY_F4" mapto="erase" flags="m" />
-		<key id="KEY_INSERT" mapto="toggleInsert" flags="m" />
+		<key id="KEY_INSERT" mapto="toggleOverwrite" flags="m" />
 		<key id="KEY_ASCII" mapto="gotAsciiCode" flags="mr" />
 	</map>
 
