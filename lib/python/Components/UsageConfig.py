@@ -1,12 +1,11 @@
 from locale import AM_STR, PM_STR, nl_langinfo
 from os import mkdir
-from os.path import exists, islink, join as pathjoin
+from os.path import exists, join as pathjoin
 from time import mktime
 
-from enigma import eBackgroundFileEraser, eDVBDB, eEnv, setEnableTtCachingOnOff, setPreferredTuner, setSpinnerOnOff, setTunerTypePriorityOrder, Misc_Options, eServiceEvent, eDVBLocalTimeHandler, eEPGCache
+from enigma import eBackgroundFileEraser, eDVBDB, eEnv, setEnableTtCachingOnOff, setPreferredTuner, setSpinnerOnOff, setTunerTypePriorityOrder, Misc_Options, eServiceEvent, eEPGCache
 
 from skin import parameters
-from Components.About import GetIPsFromNetworkInterfaces
 from Components.config import ConfigBoolean, ConfigClock, ConfigDictionarySet, ConfigEnableDisable, ConfigInteger, ConfigLocations, ConfigNumber, ConfigPassword, ConfigSelection, ConfigSelectionNumber, ConfigSet, ConfigSlider, ConfigSubDict, ConfigSubsection, ConfigText, ConfigYesNo, NoSave, config
 from Components.Console import Console
 from Components.Harddisk import harddiskmanager
@@ -1450,27 +1449,6 @@ def InitUsageConfig():
 
 	config.misc.softcam_setup = ConfigSubsection()
 	config.misc.softcam_setup.extension_menu = ConfigYesNo(default=True)
-
-	config.ntp = ConfigSubsection()
-
-	def timesyncChanged(configElement):
-		if configElement.value == "dvb" or not GetIPsFromNetworkInterfaces():
-			eDVBLocalTimeHandler.getInstance().setUseDVBTime(True)
-			eEPGCache.getInstance().timeUpdated()
-			if configElement.value == "dvb" and islink("/etc/network/if-up.d/ntpdate-sync"):
-				Console().ePopen("sed -i '/ntpdate-sync/d' /etc/cron/crontabs/root;unlink /etc/network/if-up.d/ntpdate-sync")
-		else:
-			eDVBLocalTimeHandler.getInstance().setUseDVBTime(False)
-			eEPGCache.getInstance().timeUpdated()
-			if not islink("/etc/network/if-up.d/ntpdate-sync"):
-				Console().ePopen("echo '30 * * * * /usr/bin/ntpdate-sync silent' >>/etc/cron/crontabs/root;ln -s /usr/bin/ntpdate-sync /etc/network/if-up.d/ntpdate-sync")
-	config.ntp.timesync = ConfigSelection(default="auto", choices=[
-		("auto", _("Auto")),
-		("dvb", _("Transponder time")),
-		("ntp", _("Internet time (NTP)"))
-	])
-	config.ntp.timesync.addNotifier(timesyncChanged)
-	config.ntp.server = ConfigText("pool.ntp.org", fixed_size=False)
 
 
 def updateChoices(sel, choices):

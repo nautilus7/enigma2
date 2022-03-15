@@ -333,7 +333,7 @@ def runScreen():
 			wakeupTime = nowTime + 30  # So switch back on in 30 seconds.
 		else:
 			wakeupTime = startTime[0] - 240
-		if not config.ntp.timesync.value == "dvb":
+		if config.time.syncMethod.value != "dvb":
 			setRTCtime(nowTime)
 		setFPWakeuptime(wakeupTime)
 		config.misc.prev_wakeup_time.value = int(startTime[0])
@@ -584,6 +584,10 @@ Components.UsageConfig.InitUsageConfig()
 profile("TimeZones")
 from Components.Timezones import InitTimeZones
 InitTimeZones()
+
+profile("NetworkTime")
+from Components.NetworkTime import ntpSyncPoller
+ntpSyncPoller.startTimer()
 
 profile("Keymap")
 from Components.ActionMap import loadKeymap #, readKeymap

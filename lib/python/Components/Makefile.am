@@ -40,6 +40,7 @@ install_PYTHON = \
 	MultiContent.py \
 	Netlink.py \
 	Network.py \
+	NetworkTime.py \
 	NimManager.py \
 	Opkg.py \
 	PackageInfo.py \
