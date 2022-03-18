@@ -484,7 +484,7 @@ config.expert.skipconfirm = ConfigOnOff(default=False)
 config.osd = ConfigSubsection()
 config.misc.country = ConfigText(default="US")
 config.misc.DeepStandby = NoSave(ConfigYesNo(default=False))  # Detect deepstandby.
-config.misc.epgcache_filename = ConfigText(default="/hdd/epg.dat", fixed_size=False)
+config.misc.epgcache_filename = ConfigText(default="/media/hdd/epg.dat", fixed_size=False)
 config.misc.language = ConfigText(default="en")
 config.misc.load_unlinked_userbouquets = ConfigYesNo(default=True)
 config.misc.load_unlinked_userbouquets.addNotifier(setLoadUnlinkedUserbouquets)
