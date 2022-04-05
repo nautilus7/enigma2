@@ -34,6 +34,16 @@
 		undesirable side effects.
 	-->
 
+	<map context="CancelActions">
+		<key id="KEY_RED" mapto="cancel" flags="m" />
+		<key id="KEY_EXIT" mapto="cancel" flags="b" />
+		<key id="KEY_EXIT" mapto="close" flags="l" />
+		<!-- Keyboard specific buttons -->
+		<key id="KEY_F5" mapto="cancel" flags="m" />
+		<key id="KEY_ESC" mapto="cancel" flags="b" />
+		<key id="KEY_ESC" mapto="close" flags="l" />
+	</map>
+
 	<map context="CancelSaveActions">
 		<key id="KEY_RED" mapto="cancel" flags="m" />
 		<key id="KEY_GREEN" mapto="save" flags="m" />
@@ -112,9 +122,10 @@
 
 	<map context="HelpMenuListboxActions">
 		<!--
-		Map to catch break events for the ListboxActions keys
-		in Screens.HelpMenu so that those are not passed through
-		to the HelpMenu wildcard actions as unhandled keypresses.
+			Map to catch break events for the ListboxActions keys
+			in Screens.HelpMenu so that those are not passed
+			through to the HelpMenu wildcard actions as unhandled
+			keypresses.
 		-->
 		<device name="keyboard">
 			<key id="a" mapto="ignore" flags="b" />
@@ -220,11 +231,11 @@
 	<map context="OkActions">
 		<key id="KEY_OK" mapto="ok" flags="m" />
 		<key id="KEY_OK" mapto="OK" flags="b" />
-		<key id="KEY_OK" mapto="okLong" flags="l" />
+		<key id="KEY_OK" mapto="OKLong" flags="l" />
 		<!-- Keyboard specific buttons -->
 		<key id="KEY_ENTER" mapto="ok" flags="m" />
 		<key id="KEY_ENTER" mapto="OK" flags="b" />
-		<key id="KEY_ENTER" mapto="okLong" flags="l" />
+		<key id="KEY_ENTER" mapto="OKLong" flags="l" />
 	</map>
 
 	<map context="OkCancelActions">
@@ -245,6 +256,18 @@
 		<key id="KEY_ESC" mapto="close" flags="l" />
 		<key id="\x0a" mapto="ok" flags="m" />
 		<key id="\x1b" mapto="cancel" flags="m" />
+	</map>
+
+	<map context="OkSaveActions">
+		<key id="KEY_OK" mapto="ok" flags="m" />
+		<key id="KEY_OK" mapto="OK" flags="b" />
+		<key id="KEY_OK" mapto="OKLong" flags="l" />
+		<key id="KEY_GREEN" mapto="save" flags="m" />
+		<!-- Keyboard specific buttons -->
+		<key id="KEY_ENTER" mapto="ok" flags="m" />
+		<key id="KEY_ENTER" mapto="OK" flags="b" />
+		<key id="KEY_ENTER" mapto="OKLong" flags="l" />
+		<key id="KEY_F6" mapto="save" flags="m" />
 	</map>
 
 	<map context="TextEditActions">
