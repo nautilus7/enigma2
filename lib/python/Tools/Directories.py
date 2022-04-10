@@ -54,7 +54,7 @@ PATH_DONTCREATE = 1
 
 defaultPaths = {
 	SCOPE_HOME: ("", PATH_DONTCREATE),  # User home directory
-	SCOPE_LANGUAGE: (eEnv.resolve("${datadir}/enigma2/po/"), PATH_DONTCREATE),
+	SCOPE_LANGUAGE: (eEnv.resolve("${datadir}/locale/"), PATH_DONTCREATE),
 	SCOPE_KEYMAPS: (eEnv.resolve("${datadir}/keymaps/"), PATH_CREATE),
 	SCOPE_METADIR: (eEnv.resolve("${datadir}/meta/"), PATH_CREATE),
 	SCOPE_SKINS: (eEnv.resolve("${datadir}/enigma2/"), PATH_DONTCREATE),
