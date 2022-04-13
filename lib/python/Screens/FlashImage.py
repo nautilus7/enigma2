@@ -1,5 +1,6 @@
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
+from Screens.MultiBootManager import MultiBootManager
 from Screens.Standby import getReasons
 from Components.Sources.StaticText import StaticText
 from Components.ChoiceList import ChoiceList, ChoiceEntryComponent
@@ -7,22 +8,17 @@ from Components.config import config, configfile
 from Components.ActionMap import ActionMap
 from Components.Console import Console
 from Components.Label import Label
-from Components.Pixmap import Pixmap
 from Components.ProgressBar import ProgressBar
 from Components.SystemInfo import SystemInfo
 from Tools.BoundFunction import boundFunction
 from Tools.Directories import resolveFilename, SCOPE_PLUGINS
-from Tools.Downloader import downloadWithProgress
 from Tools.HardwareInfo import HardwareInfo
-from Tools.Multiboot import getImagelist, getCurrentImage, getCurrentImageMode, deleteImage, restoreImages
+from Tools.MultiBoot import MultiBoot
 import os
 from urllib.request import urlopen
 import json
-import time
 import zipfile
 import shutil
-import tempfile
-import struct
 
 from enigma import eEPGCache
 
@@ -227,8 +223,9 @@ class FlashImage(Screen):
 		else:
 			self.message = _("Do you want to flash image\n%s") % self.imagename
 		if SystemInfo["canMultiBoot"]:
-			imagesList = getImagelist()
-			currentimageslot = getCurrentImage()
+			imagesList = []
+			MultiBoot.getSlotImageList(imagesList)
+			currentimageslot = MultiBoot.getCurrentSlotCode()
 			choices = []
 			slotdict = {k: v for k, v in SystemInfo["canMultiBoot"].items() if not v['device'].startswith('/dev/sda')}
 			for x in range(1, len(slotdict) + 1):
@@ -402,130 +399,6 @@ class FlashImage(Screen):
 
 	def ok(self):
 		if self["header"].text == _("Flashing image successful"):
-			self.session.openWithCallback(self.abort, MultibootSelection)
+			self.session.openWithCallback(self.abort, MultiBootManager)
 		else:
 			return 0
-
-
-class MultibootSelection(SelectImage):
-	def __init__(self, session, *args):
-		SelectImage.__init__(self, session)
-		self.skinName = ["MultibootSelection", "SelectImage"]
-		self.expanded = []
-		self.tmp_dir = None
-		self.setTitle(_("Multiboot image selector"))
-		self["key_red"] = StaticText(_("Cancel"))
-		self["key_green"] = StaticText(_("Reboot"))
-		self["key_yellow"] = StaticText()
-		self["list"] = ChoiceList([])
-
-		self["actions"] = ActionMap(["OkCancelActions", "ColorActions", "DirectionActions", "KeyboardInputActions", "MenuActions"],
-		{
-			"ok": self.keyOk,
-			"cancel": self.cancel,
-			"red": self.cancel,
-			"green": self.keyOk,
-			"yellow": self.deleteImage,
-			"up": self.keyUp,
-			"down": self.keyDown,
-			"left": self.keyLeft,
-			"right": self.keyRight,
-			"upRepeated": self.keyUp,
-			"downRepeated": self.keyDown,
-			"leftRepeated": self.keyLeft,
-			"rightRepeated": self.keyRight,
-			"menu": boundFunction(self.cancel, True),
-		}, -1)
-
-		self.currentimageslot = getCurrentImage()
-		self.tmp_dir = tempfile.mkdtemp(prefix="MultibootSelection")
-		Console().ePopen('mount %s %s' % (SystemInfo["MultibootStartupDevice"], self.tmp_dir))
-		self.getImagesList()
-
-	def cancel(self, value=None):
-		Console().ePopen('umount %s' % self.tmp_dir)
-		if not os.path.ismount(self.tmp_dir):
-			os.rmdir(self.tmp_dir)
-		if value == 2:
-			from Screens.Standby import TryQuitMainloop
-			self.session.open(TryQuitMainloop, 2)
-		else:
-			self.close(value)
-
-	def getImagesList(self):
-		list = []
-		imagesList = getImagelist()
-		mode = getCurrentImageMode() or 0
-		self.deletedImagesExists = False
-		if imagesList:
-			for index, x in enumerate(sorted(imagesList.keys())):
-				if imagesList[x]["imagename"] == _("Deleted image"):
-					self.deletedImagesExists = True
-				elif imagesList[x]["imagename"] != _("Empty slot"):
-					if SystemInfo["canMode12"]:
-						list.insert(index, ChoiceEntryComponent('', ((_("slot%s - %s mode 1 (current image)") if x == self.currentimageslot and mode != 12 else _("slot%s - %s mode 1")) % (x, imagesList[x]['imagename']), (x, 1))))
-						list.append(ChoiceEntryComponent('', ((_("slot%s - %s mode 12 (current image)") if x == self.currentimageslot and mode == 12 else _("slot%s - %s mode 12")) % (x, imagesList[x]['imagename']), (x, 12))))
-					else:
-						list.append(ChoiceEntryComponent('', ((_("slot%s - %s (current image)") if x == self.currentimageslot and mode != 12 else _("slot%s - %s")) % (x, imagesList[x]['imagename']), (x, 1))))
-		if os.path.isfile(os.path.join(self.tmp_dir, "STARTUP_RECOVERY")):
-			list.append(ChoiceEntryComponent('', ((_("Boot to Recovery menu")), "Recovery")))
-		if os.path.isfile(os.path.join(self.tmp_dir, "STARTUP_ANDROID")):
-			list.append(ChoiceEntryComponent('', ((_("Boot to Android image")), "Android")))
-		if not list:
-			list.append(ChoiceEntryComponent('', ((_("No images found")), "Waiter")))
-		self["list"].setList(list)
-		self.selectionChanged()
-
-	def deleteImage(self):
-		if self["key_yellow"].text == _("Restore deleted images"):
-			self.session.openWithCallback(self.deleteImageCallback, MessageBox, _("Are you sure to restore all deleted images"), simple=True)
-		elif self["key_yellow"].text == _("Delete Image"):
-			self.session.openWithCallback(self.deleteImageCallback, MessageBox, "%s:\n%s" % (_("Are you sure to delete image:"), self.currentSelected[0][0]), simple=True)
-
-	def deleteImageCallback(self, answer):
-		if answer:
-			if self["key_yellow"].text == _("Restore deleted images"):
-				restoreImages()
-			else:
-				deleteImage(self.currentSelected[0][1][0])
-			self.getImagesList()
-
-	def keyOk(self):
-		self.session.openWithCallback(self.doReboot, MessageBox, "%s:\n%s" % (_("Are you sure to reboot to"), self.currentSelected[0][0]), simple=True)
-
-	def doReboot(self, answer):
-		if answer:
-			slot = self.currentSelected[0][1]
-			if slot == "Recovery":
-				shutil.copyfile(os.path.join(self.tmp_dir, "STARTUP_RECOVERY"), os.path.join(self.tmp_dir, "STARTUP"))
-			elif slot == "Android":
-				shutil.copyfile(os.path.join(self.tmp_dir, "STARTUP_ANDROID"), os.path.join(self.tmp_dir, "STARTUP"))
-			elif SystemInfo["canMultiBoot"][slot[0]]['startupfile']:
-				if SystemInfo["canMode12"]:
-					startupfile = os.path.join(self.tmp_dir, "%s_%s" % (SystemInfo["canMultiBoot"][slot[0]]['startupfile'].rsplit('_', 1)[0], slot[1]))
-				else:
-					startupfile = os.path.join(self.tmp_dir, "%s" % SystemInfo["canMultiBoot"][slot[0]]['startupfile'])
-				if SystemInfo["canDualBoot"]:
-					with open('/dev/block/by-name/flag', 'wb') as f:
-						f.write(struct.pack("B", int(slot[0])))
-					startupfile = os.path.join("/boot", "%s" % SystemInfo["canMultiBoot"][slot[0]]['startupfile'])
-					shutil.copyfile(startupfile, os.path.join("/boot", "STARTUP"))
-				else:
-					shutil.copyfile(startupfile, os.path.join(self.tmp_dir, "STARTUP"))
-			else:
-				model = HardwareInfo().get_machine_name()
-				if slot[1] == 1:
-					startupFileContents = "boot emmcflash0.kernel%s 'root=/dev/mmcblk0p%s rw rootwait %s_4.boxmode=1'\n" % (slot[0], slot[0] * 2 + 1, model)
-				else:
-					startupFileContents = "boot emmcflash0.kernel%s 'brcm_cma=520M@248M brcm_cma=%s@768M root=/dev/mmcblk0p%s rw rootwait %s_4.boxmode=12'\n" % (slot[0], SystemInfo["canMode12"], slot[0] * 2 + 1, model)
-				open(os.path.join(self.tmp_dir, "STARTUP"), 'w').write(startupFileContents)
-			self.cancel(2)
-
-	def selectionChanged(self):
-		self.currentSelected = self["list"].l.getCurrentSelection()
-		if isinstance(self.currentSelected[0][1], tuple) and self.currentimageslot != self.currentSelected[0][1][0]:
-			self["key_yellow"].setText(_("Delete Image"))
-		elif self.deletedImagesExists:
-			self["key_yellow"].setText(_("Restore deleted images"))
-		else:
-			self["key_yellow"].setText("")

@@ -21,7 +21,7 @@ install_PYTHON = \
 	Import.py \
 	ISO639.py \
 	LoadPixmap.py \
-	Multiboot.py \
+	MultiBoot.py \
 	Notifications.py \
 	NumericalTextInput.py \
 	Profile.py \

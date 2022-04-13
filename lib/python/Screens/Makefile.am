@@ -31,6 +31,7 @@ install_PYTHON = \
 	MessageBox.py \
 	MinuteInput.py \
 	MovieSelection.py \
+	MultiBootManager.py \
 	Mute.py \
 	NetworkSetup.py \
 	NumericalTextInputHelpDialog.py \
