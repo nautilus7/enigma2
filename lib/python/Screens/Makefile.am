@@ -9,7 +9,6 @@ install_PYTHON = \
 	ChoiceBox.py \
 	Ci.py \
 	Console.py \
-	CopyFiles.py \
 	Dish.py \
 	DVD.py \
 	EpgSelection.py \

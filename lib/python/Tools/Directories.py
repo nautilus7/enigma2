@@ -610,8 +610,7 @@ def moveFiles(fileList):
 	except (IOError, OSError) as err:
 		if err.errno == errno.EXDEV:  # Invalid cross-device link
 			print("[Directories] Warning: Cannot rename across devices, trying slower move.")
-			# from Tools.CopyFiles import moveFiles as extMoveFiles  # OpenViX, OpenATV, Beyonwiz
-			from Screens.CopyFiles import moveFiles as extMoveFiles  # OpenPLi
+			from Tools.CopyFiles import moveFiles as extMoveFiles
 			extMoveFiles(fileList, item[0])
 			print("[Directories] Moving files in background.")
 		else:
