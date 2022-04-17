@@ -200,6 +200,8 @@ class ChannelContextMenu(Screen):
 								append_when_current_valid(current, menu, (_("Do not center DVB subs on this service"), self.removeCenterDVBSubsFlag), level=2)
 							else:
 								append_when_current_valid(current, menu, (_("Do center DVB subs on this service"), self.addCenterDVBSubsFlag), level=2)
+					if not eDVBDB.getInstance().isCrypted(eServiceReference(current.toString())):
+						append_when_current_valid(current, menu, (_("Mark service as BISS encrypted"), self.setBISS), level=0)
 
 					if haveBouquets:
 						bouquets = self.csel.getBouquetList()
@@ -307,6 +309,14 @@ class ChannelContextMenu(Screen):
 		if config.plugins.OSD3DSetup.mode.value == "auto" and (playingref and playingref == self.csel.getCurrentSelection()):
 			from Plugins.SystemPlugins.OSD3DSetup.plugin import applySettings
 			applySettings(value and "sidebyside" or config.plugins.OSD3DSetup.mode.value)
+
+	def setBISS(self):
+		self.setCAID(0x2600)
+
+	def setCAID(self, value):
+		eDVBDB.getInstance().addCAID(eServiceReference(self.csel.getCurrentSelection().toString()), value)
+		eDVBDB.getInstance().reloadBouquets()
+		self.close()
 
 	def addDedicated3DFlag(self):
 		eDVBDB.getInstance().addFlag(eServiceReference(self.csel.getCurrentSelection().toString()), FLAG_IS_DEDICATED_3D)
