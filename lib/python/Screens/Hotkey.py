@@ -208,7 +208,7 @@ def getHotkeyFunctions():
 		hotkey.functions.append((plugin[0], "MenuPlugin/scan/" + plugin[2], "Scanning"))
 	hotkey.functions.append((_("Network"), "Module/Screens.NetworkSetup/NetworkAdapterSelection", "Setup"))
 	hotkey.functions.append((_("Plugin Browser"), "Module/Screens.PluginBrowser/PluginBrowser", "Setup"))
-	hotkey.functions.append((_("Sleeptimer edit"), "Module/Screens.SleepTimerEdit/SleepTimerEdit", "Setup"))
+	hotkey.functions.append((_("Sleep Timer"), "Module/Screens.SleepTimer/SleepTimer", "Setup"))
 	hotkey.functions.append((_("Channel Info"), "Module/Screens.ServiceInfo/ServiceInfo", "Setup"))
 	hotkey.functions.append((_("Timer"), "Module/Screens.TimerEdit/TimerEditList", "Setup"))
 	for plugin in plugins.getPluginsForMenu("system"):

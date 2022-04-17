@@ -40,15 +40,10 @@ class Navigation:
 		self.RecordTimer = RecordTimer.RecordTimer()
 		self.__wasTimerWakeup = getFPWasTimerWakeup()
 		self.__isRestartUI = config.misc.RestartUI.value
-		startup_to_standby = config.usage.startup_to_standby.value
-		wakeup_time_type = config.misc.prev_wakeup_time_type.value
-		wakeup_timer_enabled = False
 		if config.usage.remote_fallback_import_restart.value:
 			ImportChannels()
 		if self.__wasTimerWakeup:
-			wakeup_timer_enabled = wakeup_time_type == 3 and config.misc.prev_wakeup_time.value
-			if not wakeup_timer_enabled:
-				RecordTimer.RecordTimerEntry.setWasInDeepStandby()
+			RecordTimer.RecordTimerEntry.setWasInDeepStandby()
 		if config.misc.RestartUI.value:
 			config.misc.RestartUI.value = False
 			config.misc.RestartUI.save()
@@ -56,13 +51,9 @@ class Navigation:
 		else:
 			if config.usage.remote_fallback_import.value and not config.usage.remote_fallback_import_restart.value:
 				ImportChannels()
-			if startup_to_standby == "yes" or self.__wasTimerWakeup and config.misc.prev_wakeup_time.value and (wakeup_time_type == 0 or wakeup_time_type == 1 or (wakeup_time_type == 3 and startup_to_standby == "except")):
+			if config.usage.startInStandby.value or self.__wasTimerWakeup:
 				if not Screens.Standby.inTryQuitMainloop:
-					AddNotification(Screens.Standby.Standby, wakeup_timer_enabled and 1 or True)
-		if config.misc.prev_wakeup_time.value:
-			config.misc.prev_wakeup_time.value = 0
-			config.misc.prev_wakeup_time.save()
-			configfile.save()
+					AddNotification(Screens.Standby.Standby)
 
 	def wasTimerWakeup(self):
 		return self.__wasTimerWakeup

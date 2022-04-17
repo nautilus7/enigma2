@@ -54,6 +54,7 @@ from RecordTimer import RecordTimerEntry, RecordTimer, findSafeRecordPath
 # hack alert!
 from Screens.Menu import MainMenu, mdom
 
+energyTimerCallBack = None
 
 def isStandardInfoBar(self):
 	return self.__class__.__name__ == "InfoBar"
@@ -219,6 +220,8 @@ class InfoBarUnhandledKey:
 
 	#this function is called on every keypress!
 	def actionA(self, key, flag):
+		if energyTimerCallBack and str(config.usage.energyTimer.value) == config.usage.energyTimer.savedValue:  # Don't change energy timer while it is being edited.
+			energyTimerCallBack(config.usage.energyTimer.value, showMessage=False)
 		self.unhandledKeyDialog.hide()
 		if flag != 4:
 			if self.flags & (1 << 1):
@@ -3508,108 +3511,117 @@ class InfoBarServiceErrorPopupSupport:
 					AddPopup(text=error, type=MessageBox.TYPE_ERROR, timeout=5, id="ZapError")
 
 
-class InfoBarPowersaver:
+class InfoBarSleepTimer:
 	def __init__(self):
-		self.inactivityTimer = eTimer()
-		self.inactivityTimer.callback.append(self.inactivityTimeout)
-		self.restartInactiveTimer()
+		global energyTimerCallBack
 		self.sleepTimer = eTimer()
 		self.sleepStartTime = 0
 		self.sleepTimer.callback.append(self.sleepTimerTimeout)
-		eActionMap.getInstance().bindAction('', -maxsize - 1, self.keypress)
-
-	def keypress(self, key, flag):
-		if flag:
-			self.restartInactiveTimer()
-
-	def restartInactiveTimer(self):
-		time = abs(int(config.usage.inactivity_timer.value))
-		if time:
-			self.inactivityTimer.startLongTimer(time)
-		else:
-			self.inactivityTimer.stop()
-
-	def inactivityTimeout(self):
-		if config.usage.inactivity_timer_blocktime.value:
-			curtime = localtime(time())
-			if curtime.tm_year > 1970: #check if the current time is valid
-				duration = blocktime = extra_time = False
-				if config.usage.inactivity_timer_blocktime_by_weekdays.value:
-					weekday = curtime.tm_wday
-					if config.usage.inactivity_timer_blocktime_day[weekday].value:
-						blocktime = True
-						begintime = tuple(config.usage.inactivity_timer_blocktime_begin_day[weekday].value)
-						endtime = tuple(config.usage.inactivity_timer_blocktime_end_day[weekday].value)
-						extra_time = config.usage.inactivity_timer_blocktime_extra_day[weekday].value
-						begintime_extra = tuple(config.usage.inactivity_timer_blocktime_extra_begin_day[weekday].value)
-						endtime_extra = tuple(config.usage.inactivity_timer_blocktime_extra_end_day[weekday].value)
-				else:
-					blocktime = True
-					begintime = tuple(config.usage.inactivity_timer_blocktime_begin.value)
-					endtime = tuple(config.usage.inactivity_timer_blocktime_end.value)
-					extra_time = config.usage.inactivity_timer_blocktime_extra.value
-					begintime_extra = tuple(config.usage.inactivity_timer_blocktime_extra_begin.value)
-					endtime_extra = tuple(config.usage.inactivity_timer_blocktime_extra_end.value)
-				curtime = (curtime.tm_hour, curtime.tm_min, curtime.tm_sec)
-				if blocktime and (begintime <= endtime and (curtime >= begintime and curtime < endtime) or begintime > endtime and (curtime >= begintime or curtime < endtime)):
-					duration = (endtime[0] * 3600 + endtime[1] * 60) - (curtime[0] * 3600 + curtime[1] * 60 + curtime[2])
-				elif extra_time and (begintime_extra <= endtime_extra and (curtime >= begintime_extra and curtime < endtime_extra) or begintime_extra > endtime_extra and (curtime >= begintime_extra or curtime < endtime_extra)):
-					duration = (endtime_extra[0] * 3600 + endtime_extra[1] * 60) - (curtime[0] * 3600 + curtime[1] * 60 + curtime[2])
-				if duration:
-					if duration < 0:
-						duration += 24 * 3600
-					self.inactivityTimer.startLongTimer(duration)
-					return
-		if Screens.Standby.inStandby:
-			self.inactivityTimeoutCallback(True)
-		else:
-			message = _("Your receiver will got to standby due to inactivity.") + "\n" + _("Do you want this?")
-			self.session.openWithCallback(self.inactivityTimeoutCallback, MessageBox, message, timeout=60, simple=True, default=False, timeout_default=True)
-
-	def inactivityTimeoutCallback(self, answer):
-		if answer:
-			self.goStandby()
-		else:
-			print("[InfoBarPowersaver] abort")
+		self.energyTimer = eTimer()
+		self.energyStartTime = 0
+		self.energyTimer.callback.append(self.energyTimerTimeout)
+		energyTimerCallBack = self.setEnergyTimer
 
 	def sleepTimerState(self):
-		if self.sleepTimer.isActive():
-			return (self.sleepStartTime - time()) / 60
+		return self.getTimerRemaining(self.sleepTimer, self.sleepStartTime)
+
+	def energyTimerState(self):
+		return self.getTimerRemaining(self.energyTimer, self.energyStartTime)
+
+	def getTimerRemaining(self, timer, startTime):
+		if timer.isActive():
+			return (startTime - time())
 		return 0
 
-	def setSleepTimer(self, sleepTime):
-		print("[InfoBarPowersaver] set sleeptimer", sleepTime)
-		if sleepTime:
-			m = abs(sleepTime / 60)
-			message = _("The sleep timer has been activated.") + "\n" + _("And will put your receiver in standby over ") + ngettext("%d minute", "%d minutes", m) % m
-			self.sleepTimer.startLongTimer(sleepTime)
-			self.sleepStartTime = time() + sleepTime
+	def setSleepTimer(self, sleepTime, showMessage=True):
+		self.sleepStartTime = self.setTimer(sleepTime, self.sleepStartTime, self.sleepTimer, _("Sleep timer"), showMessage=showMessage)
+
+	def setEnergyTimer(self, energyTime, showMessage=True):
+		self.energyStartTime = self.setTimer(energyTime, self.energyStartTime, self.energyTimer, _("Energy timer"), showMessage=showMessage)
+
+	def setTimer(self, delay, previous, timer, name, showMessage):
+		minutes = delay // 60
+		if delay:
+			message = "%s\n%s %s" % (_("%s has been activated.") % name, _("Delay:"), _("%d minutes") % minutes)
+			timer.startLongTimer(delay)
+			delay = int(time()) + delay
 		else:
-			message = _("The sleep timer has been disabled.")
-			self.sleepTimer.stop()
-		AddPopup(message, type=MessageBox.TYPE_INFO, timeout=5)
+			message = _("%s has been disabled.") % name
+			timer.stop()
+			delay = 0
+		if showMessage and delay != previous:
+			print("[InfoBarGenerics] InfoBarSleepTimer: %s set to %d minutes." % (name, minutes))
+			AddPopup(message, type=MessageBox.TYPE_INFO, timeout=5)
+		return delay
 
 	def sleepTimerTimeout(self):
-		if not Screens.Standby.inStandby:
-			list = [(_("No"), False), (_("Extend sleeptimer 15 minutes"), "extend"), (_("Yes"), True)]
-			message = _("Your receiver will got to stand by due to the sleeptimer.")
-			message += "\n" + _("Do you want this?")
-			self.session.openWithCallback(self.sleepTimerTimeoutCallback, MessageBox, message, timeout=60, simple=True, list=list, timeout_default=True)
+		action = config.usage.sleepTimerAction.value
+		timeout = self.timerTimeout(action, self.setSleepTimer, _("Sleep Timer"))
+		if timeout:
+			if not Screens.Standby.inStandby:
+				optionList = [
+					(_("Yes"), True),
+					(_("No"), False),
+					(_("Extend"), "extend")
+				]
+				state = _("Standby") if action == "standby" else _("Deep Standby")
+				message = _("The sleep timer wants to set the receiver to %s.\n\nDo that now or extend the timer?") % state
+				self.session.openWithCallback(self.sleepTimerTimeoutCallback, MessageBox, message, timeout=timeout, list=optionList, default=True, windowTitle=_("Sleep Timer"))  # , simple=True
+			else:
+				self.timerStandby(action)
 
 	def sleepTimerTimeoutCallback(self, answer):
 		if answer == "extend":
-			print("[InfoBarPowersaver] extend sleeptimer")
-			self.setSleepTimer(900)
+			from Screens.SleepTimer import SleepTimer
+			self.session.open(SleepTimer)
 		elif answer:
-			self.goStandby()
+			self.timerStandby(config.usage.sleepTimerAction.value)
 		else:
-			print("[InfoBarPowersaver] abort")
-			self.setSleepTimer(0)
+			self.setSleepTimer(0, showMessage=False)
 
-	def goStandby(self):
-		if not Screens.Standby.inStandby:
-			print("[InfoBarPowersaver] goto standby")
-			self.session.open(Screens.Standby.Standby)
+	def energyTimerTimeout(self):
+		action = config.usage.energyTimerAction.value
+		timeout = self.timerTimeout(action, self.setEnergyTimer, _("Energy Timer"))
+		if timeout:
+			if not Screens.Standby.inStandby:
+				state = _("Standby") if action == "standby" else _("Deep Standby")
+				message = _("The energy timer wants to set the receiver to %s.\n\nPress OK to continue using the receiver.") % state
+				self.session.openWithCallback(self.energyTimerTimeoutCallback, MessageBox, message, type=MessageBox.TYPE_WARNING, timeout=timeout, default=True, timeoutDefault=False, windowTitle=_("Energy Timer"))  # , simple=True
+			else:
+				self.timerStandby(action)
+
+	def energyTimerTimeoutCallback(self, answer):
+		if answer:
+			self.setEnergyTimer(0, showMessage=False)
+		else:
+			self.timerStandby(config.usage.energyTimerAction.value)
+
+	def timerTimeout(self, action, timerMethod, name):
+		timeout = 120
+		if action != "standby":
+			isRecordTime = abs(self.session.nav.RecordTimer.getNextRecordingTime() - time()) <= 900 or self.session.nav.RecordTimer.getStillRecording() or abs(self.session.nav.RecordTimer.getNextZapTime() - time()) <= 900
+			isPowerTime = abs(self.session.nav.PowerTimer.getNextPowerManagerTime() - time()) <= 900 or self.session.nav.PowerTimer.isProcessing(exceptTimer=0)
+			if isRecordTime or isPowerTime:
+				timerMethod(1800, showMessage=False)  # 1800 = 30 minutes.
+				if not Screens.Standby.inStandby:
+					message = _("A recording, recording timer or power timer is running or will begin within 15 minutes. %s extended to 30 minutes. Your %s %s will go to Deep Standby after the recording or power timer event.\n\nGo to Deep Standby now?") % (name, brand, model)
+					self.session.openWithCallback(boundFunction(self.timerStandby, action), MessageBox, message, MessageBox.TYPE_YESNO, timeout=timeout, default=True, windowTitle=name)
+				return None
+		return timeout
+
+	def timerStandby(self, action, answer=None):
+		if action == "standby" or answer:
+			if not Screens.Standby.inStandby:
+				print("[InfoBarGenerics] InfoBarSleepTimer: Going to Standby.")
+				self.session.open(Screens.Standby.Standby)
+		elif answer is None:
+			if not Screens.Standby.inStandby:
+				if not Screens.Standby.inTryQuitMainloop:
+					print("[InfoBarGenerics] InfoBarSleepTimer: Going to Deep Standby.")
+					self.session.open(Screens.Standby.TryQuitMainloop, 1)
+			else:
+				print("[InfoBarGenerics] InfoBarSleepTimer: Going to Deep Standby.")
+				quitMainloop(1)
 
 
 class InfoBarHDMI:

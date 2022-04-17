@@ -67,14 +67,11 @@ class StandbyScreen(Screen):
 		globalActionMap.setEnabled(False)
 
 		self.infoBarInstance = isInfoBarInstance()
-		from Screens.SleepTimerEdit import isNextWakeupTime
 		self.StandbyCounterIncrease = StandbyCounterIncrease
 		self.standbyTimeoutTimer = eTimer()
 		self.standbyTimeoutTimer.callback.append(self.standbyTimeout)
 		self.standbyStopServiceTimer = eTimer()
 		self.standbyStopServiceTimer.callback.append(self.stopService)
-		self.standbyWakeupTimer = eTimer()
-		self.standbyWakeupTimer.callback.append(self.standbyWakeup)
 		self.timeHandler = None
 
 		self.setMute()
@@ -109,19 +106,6 @@ class StandbyScreen(Screen):
 		else:
 			self.avswitch.setInput("AUX")
 
-		gotoShutdownTime = int(config.usage.standby_to_shutdown_timer.value)
-		if gotoShutdownTime:
-			self.standbyTimeoutTimer.startLongTimer(gotoShutdownTime)
-
-		if self.StandbyCounterIncrease != 1:
-			gotoWakeupTime = isNextWakeupTime(True)
-			if gotoWakeupTime != -1:
-				curtime = localtime(time())
-				if curtime.tm_year > 1970:
-					wakeup_time = int(gotoWakeupTime - time())
-					if wakeup_time > 0:
-						self.standbyWakeupTimer.startLongTimer(wakeup_time)
-
 		self.onFirstExecBegin.append(self.__onFirstExecBegin)
 		self.onClose.append(self.__onClose)
 
@@ -130,7 +114,6 @@ class StandbyScreen(Screen):
 		inStandby = None
 		self.standbyTimeoutTimer.stop()
 		self.standbyStopServiceTimer.stop()
-		self.standbyWakeupTimer.stop()
 		self.timeHandler and self.timeHandler.m_timeUpdated.get().remove(self.stopService)
 		if self.paused_service:
 			self.paused_action and self.paused_service.unPauseService()
@@ -179,26 +162,10 @@ class StandbyScreen(Screen):
 		self.session.nav.stopService()
 
 	def standbyTimeout(self):
-		if config.usage.standby_to_shutdown_timer_blocktime.value:
-			curtime = localtime(time())
-			if curtime.tm_year > 1970: #check if the current time is valid
-				curtime = (curtime.tm_hour, curtime.tm_min, curtime.tm_sec)
-				begintime = tuple(config.usage.standby_to_shutdown_timer_blocktime_begin.value)
-				endtime = tuple(config.usage.standby_to_shutdown_timer_blocktime_end.value)
-				if begintime <= endtime and (curtime >= begintime and curtime < endtime) or begintime > endtime and (curtime >= begintime or curtime < endtime):
-					duration = (endtime[0] * 3600 + endtime[1] * 60) - (curtime[0] * 3600 + curtime[1] * 60 + curtime[2])
-					if duration:
-						if duration < 0:
-							duration += 24 * 3600
-						self.standbyTimeoutTimer.startLongTimer(duration)
-						return
 		if self.session.screen["TunerInfo"].tuner_use_mask or mediafilesInUse(self.session):
 			self.standbyTimeoutTimer.startLongTimer(600)
 		else:
 			RecordTimer.RecordTimerEntry.TryQuitMainloop()
-
-	def standbyWakeup(self):
-		self.Power()
 
 	def createSummary(self):
 		return StandbySummary

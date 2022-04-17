@@ -286,67 +286,25 @@ def InitUsageConfig():
 		("50", _("Very slow"))
 	])
 
-	config.usage.startup_to_standby = ConfigSelection(default="no", choices=[
-		("no", _("No")),
-		("yes", _("Yes")),
-		("except", _("No, except Wakeup timer"))
-	])
+	config.usage.startInStandby = ConfigYesNo(default=False)
 
-	config.usage.wakeup_enabled = ConfigSelection(default="no", choices=[
-		("no", _("No")),
-		("yes", _("Yes")),
-		("standby", _("Yes, only from standby")),
-		("deepstandby", _("Yes, only from deep standby"))
-	])
-	config.usage.wakeup_day = ConfigSubDict()
-	config.usage.wakeup_time = ConfigSubDict()
-	for i in range(7):
-		config.usage.wakeup_day[i] = ConfigEnableDisable(default=False)
-		config.usage.wakeup_time[i] = ConfigClock(default=((6 * 60 + 0) * 60))
-
-	choicelist = [("0", _("Do nothing"))]
-	for i in range(3600, 21601, 3600):
-		h = abs(i / 3600)
-		choicelist.append((str(i), _("Standby in %s") % (ngettext("%d hour", "%d hours", h) % h)))
-	config.usage.inactivity_timer = ConfigSelection(default="0", choices=choicelist)
-	config.usage.inactivity_timer_blocktime = ConfigYesNo(default=True)
-	config.usage.inactivity_timer_blocktime_begin = ConfigClock(default=mktime((1970, 1, 1, 18, 0, 0, 0, 0, 0)))
-	config.usage.inactivity_timer_blocktime_end = ConfigClock(default=mktime((1970, 1, 1, 23, 0, 0, 0, 0, 0)))
-	config.usage.inactivity_timer_blocktime_extra = ConfigYesNo(default=False)
-	config.usage.inactivity_timer_blocktime_extra_begin = ConfigClock(default=mktime((1970, 1, 1, 6, 0, 0, 0, 0, 0)))
-	config.usage.inactivity_timer_blocktime_extra_end = ConfigClock(default=mktime((1970, 1, 1, 9, 0, 0, 0, 0, 0)))
-	config.usage.inactivity_timer_blocktime_by_weekdays = ConfigYesNo(default=False)
-	config.usage.inactivity_timer_blocktime_day = ConfigSubDict()
-	config.usage.inactivity_timer_blocktime_begin_day = ConfigSubDict()
-	config.usage.inactivity_timer_blocktime_end_day = ConfigSubDict()
-	config.usage.inactivity_timer_blocktime_extra_day = ConfigSubDict()
-	config.usage.inactivity_timer_blocktime_extra_begin_day = ConfigSubDict()
-	config.usage.inactivity_timer_blocktime_extra_end_day = ConfigSubDict()
-	for i in range(7):
-		config.usage.inactivity_timer_blocktime_day[i] = ConfigYesNo(default=False)
-		config.usage.inactivity_timer_blocktime_begin_day[i] = ConfigClock(default=mktime((1970, 1, 1, 18, 0, 0, 0, 0, 0)))
-		config.usage.inactivity_timer_blocktime_end_day[i] = ConfigClock(default=mktime((1970, 1, 1, 23, 0, 0, 0, 0, 0)))
-		config.usage.inactivity_timer_blocktime_extra_day[i] = ConfigYesNo(default=False)
-		config.usage.inactivity_timer_blocktime_extra_begin_day[i] = ConfigClock(default=mktime((1970, 1, 1, 6, 0, 0, 0, 0, 0)))
-		config.usage.inactivity_timer_blocktime_extra_end_day[i] = ConfigClock(default=mktime((1970, 1, 1, 9, 0, 0, 0, 0, 0)))
-
-	choicelist = [
-		("0", _("Disabled")),
-		("event_standby", _("Standby after current event"))
+	choiceList = [
+		(0, _("Disabled")),
+		(-1, _("At end of current program"))
 	]
-	for i in range(900, 7201, 900):
-		m = abs(i / 60)
-		choicelist.append((str(i), _("Standby in %s") % (ngettext("%d minute", "%d minutes", m) % m)))
-	config.usage.sleep_timer = ConfigSelection(default="0", choices=choicelist)
-
-	choicelist = [("0", _("Disabled"))]
-	for i in [300, 600] + list(range(900, 14401, 900)):
-		m = abs(i / 60)
-		choicelist.append((str(i), _("After %s") % (ngettext("%d minute", "%d minutes", m) % m)))
-	config.usage.standby_to_shutdown_timer = ConfigSelection(default="0", choices=choicelist)
-	config.usage.standby_to_shutdown_timer_blocktime = ConfigYesNo(default=False)
-	config.usage.standby_to_shutdown_timer_blocktime_begin = ConfigClock(default=mktime((1970, 1, 1, 6, 0, 0, 0, 0, 0)))
-	config.usage.standby_to_shutdown_timer_blocktime_end = ConfigClock(default=mktime((1970, 1, 1, 23, 0, 0, 0, 0, 0)))
+	for minutes in range(15, 241, 15):
+		choiceList.append((minutes * 60, _("%d minutes") % minutes))
+	config.usage.sleepTimer = ConfigSelection(default=0, choices=choiceList)
+	choiceList = [(0, _("Disabled"))]
+	for hours in range(1, 4):
+		choiceList.append((hours * 3600, ngettext("%d hour", "%d hours", hours) % hours))
+	config.usage.energyTimer = ConfigSelection(default=0, choices=choiceList)
+	choiceList = [
+		("standby", _("Standby")),
+		("deepstandby", _("Deep Standby"))
+	]
+	config.usage.sleepTimerAction = ConfigSelection(default="deepstandby", choices=choiceList)
+	config.usage.energyTimerAction = ConfigSelection(default="deepstandby", choices=choiceList)
 
 	choicelist = [("0", _("Disabled"))]
 	for m in (1, 5, 10, 15, 30, 60):

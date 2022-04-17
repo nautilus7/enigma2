@@ -118,7 +118,7 @@
 
 	<menu weight="99" level="0" text="Power Options" entryID="power_options">
 		<id val="shutdown" />
-		<item entryID="sleep" level="0" text="Sleep timer" weight="5"><screen module="SleepTimerEdit" screen="SleepTimerEdit" /></item>
+		<item entryID="sleep" level="0" text="Sleep Timer" weight="5"><screen module="SleepTimer" screen="SleepTimer" /></item>
 		<item entryID="standby" level="0" text="Standby" weight="10"><screen module="Standby" screen="Standby" /></item>
 		<item entryID="restart" level="0" text="Restart" weight="15"><screen module="Standby" screen="TryQuitMainloop">2</screen></item>
 		<item entryID="restart_enigma_debug" level="0" text="Restart enigma" weight="25" requires="InDebugMode"><screen module="Standby" screen="TryQuitMainloop">6</screen></item>

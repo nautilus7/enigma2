@@ -80,7 +80,7 @@
 		<item level="2" text="Fan operation" description="Configure how the fan should operate" requires="Fan">config.usage.fan</item>
 		<item level="2" text="Fan speed" description="Configure the speed of the fan" requires="FanPWM">config.usage.fanspeed</item>
 		<item level="2" text="Wake On LAN" description="When enabled the set top box is able to wakeup on LAN" requires="WakeOnLAN">config.usage.wakeOnLAN</item>
-		<item level="1" text="Startup to Standby" description="Startup the set top box in standby">config.usage.startup_to_standby</item>
+		<item level="1" text="Startup to Standby" description="Startup the set top box in standby">config.usage.startInStandby</item>
 		<item level="2" text="Config resolution of pictures" description="Select in which resolution pictures are displayed with picture viewer or movie player.">config.usage.pic_resolution</item>
 		<item level="2" text="Ignore DVB-S namespace sub network" description="On valid ONIDs, ignore frequency sub network part">config.usage.subnetwork</item>
 		<item level="2" text="Ignore DVB-C namespace sub network" description="On valid ONIDs, ignore frequency sub network part">config.usage.subnetwork_cable</item>
@@ -194,6 +194,12 @@
 		<item text="Longitude" description="Configure the longitude of your location.">config.sat.diseqca</item>
 		<item text="Latitude" description="Configure the latitude of your location.">config.sat.diseqcb</item>
 		<item text="Use power measurement" description="When enabled, measure power consumption to detect when the rotor stops turning (when supported by the tuner)." >config.sat.diseqcc</item>
+	</setup>
+	<setup key="SleepTimer" title="Sleep Timer Settings" showOpenWebIf="1">
+		<item text="Sleep timer activation delay" description="Configure the duration, in minutes, before the sleep timer activates.">config.usage.sleepTimer</item>
+		<item text="Sleep timer action" description="Select the type of shutdown desired when the steep timer activates.">config.usage.sleepTimerAction</item>
+		<item text="Energy saver activation delay" description="Configure the duration, in minutes, before the energy saver timer activates.">config.usage.energyTimer</item>
+		<item text="Energy saver action" description="Select the type of shutdown desired when the energy timer activates.">config.usage.energyTimerAction</item>
 	</setup>
 	<setup key="Softcam" title="Softcam Setup">
 		<item level="0" text="Select softcam" description="Select a softcam from the available list.">config.misc.softcams</item>

@@ -56,7 +56,7 @@ install_PYTHON = \
 	SetupFallbacktuner.py \
 	SimpleSummary.py \
 	SkinSelector.py \
-	SleepTimerEdit.py \
+	SleepTimer.py \
 	SoftcamSetup.py \
 	SoftwareUpdate.py \
 	Standby.py \

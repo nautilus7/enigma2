@@ -316,14 +316,12 @@ def runScreen():
 	runReactor()
 	profile("Wakeup")
 	from Tools.StbHardware import setFPWakeuptime, setRTCtime
-	from Screens.SleepTimerEdit import isNextWakeupTime
 	nowTime = time()  # Get current time.
 	wakeupList = sorted(
 		[x for x in (
 			(session.nav.RecordTimer.getNextRecordingTime(), 0),
 			(session.nav.RecordTimer.getNextZapTime(isWakeup=True), 1),
-			(plugins.getNextWakeupTime(), 2),
-			(isNextWakeupTime(), 3)
+			(plugins.getNextWakeupTime(), 2)
 		)
 		if x[0] != -1]
 	)
@@ -336,12 +334,6 @@ def runScreen():
 		if config.time.syncMethod.value != "dvb":
 			setRTCtime(nowTime)
 		setFPWakeuptime(wakeupTime)
-		config.misc.prev_wakeup_time.value = int(startTime[0])
-		config.misc.prev_wakeup_time_type.value = startTime[1]
-		config.misc.prev_wakeup_time_type.save()
-	else:
-		config.misc.prev_wakeup_time.value = 0
-	config.misc.prev_wakeup_time.save()
 	profile("StopNavService")
 	session.nav.stopService()
 	profile("NavShutdown")
@@ -490,8 +482,6 @@ config.misc.load_unlinked_userbouquets = ConfigYesNo(default=True)
 config.misc.load_unlinked_userbouquets.addNotifier(setLoadUnlinkedUserbouquets)
 config.misc.locale = ConfigText(default="en_US")
 config.misc.locale.addNotifier(localeNotifier)
-config.misc.prev_wakeup_time = ConfigInteger(default=0)
-config.misc.prev_wakeup_time_type = ConfigInteger(default=0)  # This is only valid when wakeup_time is not 0.  0 = RecordTimer, 1 = ZapTimer, 2 = Plugins, 3 = WakeupTimer.
 config.misc.RestartUI = ConfigYesNo(default=False)  # Detect user interface restart.
 config.misc.standbyCounter = NoSave(ConfigInteger(default=0))  # Number of standby.
 config.misc.startCounter = ConfigInteger(default=0)  # Number of e2 starts.

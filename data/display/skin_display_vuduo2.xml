@@ -150,8 +150,6 @@
 		<widget source="SetupValue" render="Label" position="fill" font="Medium" noWrap="1"/>
 	</screen>
 
-	<screen name="SleepTimerEdit_summary"><panel name="SetupSummary"/></screen>
-
 <!-- misc-->
 	<screen name="SimpleSummary" position="fill">
 		<widget source="parent.Title" render="Label" position="top" size="*,18" font="Big" noWrap="1"/>

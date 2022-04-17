@@ -133,7 +133,7 @@ class HdmiCec:
 				if config.hdmicec.report_active_source.value and NavigationInstance.instance and not NavigationInstance.instance.isRestartUI():
 					self.sendMessage(0, "sourceinactive")
 				self.sendMessage(0, "menuactive")
-			if config.hdmicec.handle_deepstandby_events.value and (not getFPWasTimerWakeup() or (config.usage.startup_to_standby.value == "no" and config.misc.prev_wakeup_time_type.value == 3)):
+			if config.hdmicec.handle_deepstandby_events.value and (not getFPWasTimerWakeup() or not config.usage.startInStandby.value):
 				self.onLeaveStandby()
 
 	def getPhysicalAddress(self):
