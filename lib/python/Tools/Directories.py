@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import errno
 import os
 from re import compile, split
@@ -15,7 +14,6 @@ DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
 forceDebug = eGetEnigmaDebugLvl() > 4
 pathExists = os.path.exists
-isMount = os.path.ismount  # Only used in OpenATV /lib/python/Plugins/SystemPlugins/NFIFlash/downloader.py.
 
 SCOPE_HOME = 0  # DEBUG: Not currently used in Enigma2.
 SCOPE_LANGUAGE = 1
