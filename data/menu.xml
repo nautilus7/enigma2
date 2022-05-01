@@ -57,6 +57,7 @@
 			<menu level="0" text="Audio / Video" entryID="video_selection">
 				<id val="video" />
 				<item entryID="av_setup" level="0" text="Audio/Video Setup" weight="5"><setup id="AudioVideo" /></item>
+				<item entryID="volume_adjust" level="0" text="Volume Adjust" weight="10"><screen module="VolumeAdjust" screen="VolumeAdjust" /></item>
 				<item level="2" entryID="subtitle_setup"><setup id="subtitlesetup" /></item>
 			</menu>
 			<item level="0" entryID="user_interface"><setup id="userinterface" /></item>

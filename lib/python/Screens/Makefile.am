@@ -75,5 +75,6 @@ install_PYTHON = \
 	UnhandledKey.py \
 	VirtualKeyBoard.py \
 	Volume.py \
+	VolumeAdjust.py \
 	Wizard.py \
 	WizardLanguage.py

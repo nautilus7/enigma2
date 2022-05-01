@@ -311,6 +311,9 @@ def runScreen():
 	profile("InitTrashcan")
 	import Tools.Trashcan
 	Tools.Trashcan.init(session)
+	profile("InitVolumeAdjust")
+	import Screens.VolumeAdjust
+	Screens.VolumeAdjust.autostart(session)
 	profile("RunReactor")
 	profileFinal()
 	runReactor()
