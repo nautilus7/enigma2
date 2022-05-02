@@ -254,11 +254,6 @@ inline ePyObject Impl_PyLong_FromLong(const char* file, int line, long val)
 	return ePyObject(PyLong_FromLong(val), file, line);
 }
 
-inline ePyObject Impl_PyLong_FromLong(const char* file, int line, long val)
-{
-	return ePyObject(PyLong_FromLong(val), file, line);
-}
-
 inline ePyObject Impl_PyLong_FromUnsignedLong(const char* file, int line, unsigned long val)
 {
 	return ePyObject(PyLong_FromUnsignedLong(val), file, line);
