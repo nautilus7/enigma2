@@ -450,14 +450,23 @@ void eListboxPythonConfigContent::paint(gPainter &painter, eWindowStyle &style, 
 					} else if (!strcmp(atype, "slider"))
 					{
 						ePyObject pvalue = PyTuple_GET_ITEM(value, 1);
-						ePyObject psize = PyTuple_GET_ITEM(value, 2);
+						ePyObject pmin = PyTuple_GET_ITEM(value, 2);
+						ePyObject pmax = PyTuple_GET_ITEM(value, 3);
 
-							/* convert value to Long. fallback to -1 on error. */
-						int value = (pvalue && PyLong_Check(pvalue)) ? PyLong_AsLong(pvalue) : -1;
-						int size = (pvalue && PyLong_Check(psize)) ? PyLong_AsLong(psize) : 100;
+						int value = (pvalue && PyLong_Check(pvalue)) ? PyLong_AsLong(pvalue) : 0;
+						int min = (pmin && PyLong_Check(pmin)) ? PyLong_AsLong(pmin) : 0;
+						int max = (pmax && PyLong_Check(pmax)) ? PyLong_AsLong(pmax) : 100;
 
-							/* calc. slider length */
-						int width = (m_itemsize.width() - m_seperation - 15) * value / size;
+						// if min < 0 and max < min -> replace min, max
+						if (min < 0 && max < min)
+						{
+							int newmax = min;
+							min = max;
+							max = newmax;
+						}
+
+						/* calc. slider length */
+						int width = (m_itemsize.width() - m_seperation - 15) * (value - min) / (max - min);
 						int height = m_itemsize.height();
 
 
