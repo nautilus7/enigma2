@@ -1,6 +1,7 @@
 import errno
 import os
 from re import compile, split
+from shutil import copy2
 from stat import S_IMODE
 from sys import _getframe as getframe
 from tempfile import mkstemp
@@ -419,6 +420,15 @@ def removeDir(path):
 		return 0
 
 
+def renameDir(oldPath, newPath):
+	try:
+		os.rename(oldPath, newPath)
+		return 1
+	except (IOError, OSError) as err:
+		print("[Directories] Error %d: Couldn't rename directory '%s' to '%s'!  (%s)" % (err.errno, oldPath, newPath, err.strerror))
+	return 0
+
+
 def fileAccess(file, mode="r"):
 	accMode = os.F_OK
 	if "r" in mode:
@@ -523,43 +533,46 @@ def crawlDirectory(directory, pattern):
 	return list
 
 
+def copyFile(src, dst):
+	try:
+		copy2(src, dst)
+	except (IOError, OSError) as err:
+		print("[Directories] Error %d: Copying file '%s' to '%s'!  (%s)" % (err.errno, src, dst, err.strerror))
+		return -1
+	return 0
+	# if isdir(dst):
+	# 	dst = pathjoin(dst, basename(src))
+	# try:
+	# 	with open(src, "rb") as fd1:
+	# 		with open(dst, "w+b") as fd2:
+	# 			while True:
+	# 				buf = fd1.read(16 * 1024)
+	# 				if not buf:
+	# 					break
+	# 				fd2.write(buf)
+	# 	try:
+	# 		status = stat(src)
+	# 		try:
+	# 			chmod(dst, S_IMODE(status.st_mode))
+	# 		except (IOError, OSError) as err:
+	# 			print("[Directories] Error %d: Setting modes from '%s' to '%s'!  (%s)" % (err.errno, src, dst, err.strerror))
+	# 		try:
+	# 			utime(dst, (status.st_atime, status.st_mtime))
+	# 		except (IOError, OSError) as err:
+	# 			print("[Directories] Error %d: Setting times from '%s' to '%s'!  (%s)" % (err.errno, src, dst, err.strerror))
+	# 	except (IOError, OSError) as err:
+	# 		print("[Directories] Error %d: Obtaining status from '%s'!  (%s)" % (err.errno, src, err.strerror))
+	# except (IOError, OSError) as err:
+	# 	print("[Directories] Error %d: Copying file '%s' to '%s'!  (%s)" % (err.errno, src, dst, err.strerror))
+	# 	return -1
+	# return 0
+
+
 def copyfile(src, dst):
-	f1 = None
-	f2 = None
-	status = 0
-	try:
-		f1 = open(src, "rb")
-		if os.path.isdir(dst):
-			dst = os.path.join(dst, os.path.basename(src))
-		f2 = open(dst, "w+b")
-		while True:
-			buf = f1.read(16 * 1024)
-			if not buf:
-				break
-			f2.write(buf)
-	except (IOError, OSError) as err:
-		print("[Directories] Error %d: Copying file '%s' to '%s'! (%s)" % (err.errno, src, dst, err.strerror))
-		status = -1
-	if f1 is not None:
-		f1.close()
-	if f2 is not None:
-		f2.close()
-	try:
-		st = os.stat(src)
-		try:
-			os.chmod(dst, S_IMODE(st.st_mode))
-		except (IOError, OSError) as err:
-			print("[Directories] Error %d: Setting modes from '%s' to '%s'! (%s)" % (err.errno, src, dst, err.strerror))
-		try:
-			os.utime(dst, (st.st_atime, st.st_mtime))
-		except (IOError, OSError) as err:
-			print("[Directories] Error %d: Setting times from '%s' to '%s'! (%s)" % (err.errno, src, dst, err.strerror))
-	except (IOError, OSError) as err:
-		print("[Directories] Error %d: Obtaining stats from '%s' to '%s'! (%s)" % (err.errno, src, dst, err.strerror))
-	return status
+	return copyFile(src, dst)
 
 
-def copytree(src, dst, symlinks=False):
+def copyTree(src, dst, symlinks=False):
 	names = os.listdir(src)
 	if os.path.isdir(dst):
 		dst = os.path.join(dst, os.path.basename(src))
@@ -568,30 +581,34 @@ def copytree(src, dst, symlinks=False):
 	else:
 		os.makedirs(dst)
 	for name in names:
-		srcname = os.path.join(src, name)
-		dstname = os.path.join(dst, name)
+		srcName = os.path.join(src, name)
+		dstName = os.path.join(dst, name)
 		try:
-			if symlinks and os.path.islink(srcname):
-				linkto = os.readlink(srcname)
-				os.symlink(linkto, dstname)
-			elif os.path.isdir(srcname):
-				copytree(srcname, dstname, symlinks)
+			if symlinks and os.path.islink(srcName):
+				linkTo = os.readlink(srcName)
+				os.symlink(linkTo, dstName)
+			elif os.path.isdir(srcName):
+				copytree(srcName, dstName, symlinks)
 			else:
-				copyfile(srcname, dstname)
+				copyfile(srcName, dstName)
 		except (IOError, OSError) as err:
-			print("[Directories] Error %d: Copying tree '%s' to '%s'! (%s)" % (err.errno, srcname, dstname, err.strerror))
+			print("[Directories] Error %d: Copying tree '%s' to '%s'!  (%s)" % (err.errno, srcName, dstName, err.strerror))
 	try:
-		st = os.stat(src)
+		status = os.stat(src)
 		try:
-			os.chmod(dst, S_IMODE(st.st_mode))
+			os.chmod(dst, S_IMODE(status.st_mode))
 		except (IOError, OSError) as err:
-			print("[Directories] Error %d: Setting modes from '%s' to '%s'! (%s)" % (err.errno, src, dst, err.strerror))
+			print("[Directories] Error %d: Setting modes from '%s' to '%s'!  (%s)" % (err.errno, src, dst, err.strerror))
 		try:
-			os.utime(dst, (st.st_atime, st.st_mtime))
+			os.utime(dst, (status.st_atime, status.st_mtime))
 		except (IOError, OSError) as err:
-			print("[Directories] Error %d: Setting times from '%s' to '%s'! (%s)" % (err.errno, src, dst, err.strerror))
+			print("[Directories] Error %d: Setting times from '%s' to '%s'!  (%s)" % (err.errno, src, dst, err.strerror))
 	except (IOError, OSError) as err:
-		print("[Directories] Error %d: Obtaining stats from '%s' to '%s'! (%s)" % (err.errno, src, dst, err.strerror))
+		print("[Directories] Error %d: Obtaining stats from '%s' to '%s'!  (%s)" % (err.errno, src, dst, err.strerror))
+
+
+def copytree(src, dst, symlinks=False):
+	return copyTree(src, dst, symlinks=symlinks)
 
 # Renames files or if source and destination are on different devices moves them in background
 # input list of (source, destination)
