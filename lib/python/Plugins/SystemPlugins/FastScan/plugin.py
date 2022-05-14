@@ -1,20 +1,21 @@
-# -*- coding: utf-8 -*-
-from Plugins.Plugin import PluginDescriptor
+from os import unlink, walk
+from os.path import join as pathjoin
 
-from Screens.Screen import Screen
-from Screens.MessageBox import MessageBox
-from Components.config import config, ConfigSelection, ConfigYesNo, getConfigListEntry, ConfigSubsection, ConfigText
+from Components.ActionMap import ActionMap
+from Components.config import ConfigSelection, ConfigSubsection, ConfigText, ConfigYesNo, config, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
-from Components.NimManager import nimmanager
 from Components.Label import Label
+from Components.NimManager import nimmanager
 from Components.Pixmap import Pixmap
 from Components.ProgressBar import ProgressBar
 from Components.ServiceList import refreshServiceList
-from Components.ActionMap import ActionMap
+from Components.Sources.StaticText import StaticText
 
-from enigma import eFastScan, eDVBFrontendParametersSatellite, eTimer
+from enigma import eDVBFrontendParametersSatellite, eFastScan, eTimer
 
-import os
+from Plugins.Plugin import PluginDescriptor
+from Screens.MessageBox import MessageBox
+from Screens.Screen import Screen
 
 config.misc.fastscan = ConfigSubsection()
 config.misc.fastscan.last_configuration = ConfigText(default="()")
@@ -108,17 +109,17 @@ class FastScanStatus(Screen):
 		self.scan.scanProgress.get().append(self.scanProgress)
 		fstfile = None
 		fntfile = None
-		for root, dirs, files in os.walk('/tmp/'):
+		for root, dirs, files in walk('/tmp/'):
 			for f in files:
 				if f.endswith('.bin'):
 					if '_FST' in f:
-						fstfile = os.path.join(root, f)
+						fstfile = pathjoin(root, f)
 					elif '_FNT' in f:
-						fntfile = os.path.join(root, f)
+						fntfile = pathjoin(root, f)
 		if fstfile and fntfile:
 			self.scan.startFile(fntfile, fstfile)
-			os.unlink(fstfile)
-			os.unlink(fntfile)
+			unlink(fstfile)
+			unlink(fntfile)
 		else:
 			self.scan.start(self.scanTuner)
 
@@ -201,8 +202,8 @@ class FastScanScreen(ConfigListScreen, Screen):
 		self.createSetup()
 		self.finished_cb = None
 		self["introduction"] = Label(_("Select your provider, and press OK to start the scan"))
-		self["key_red"] = Label(_("Cancel"))
-		self["key_green"] = Label(_("Save"))
+		self["key_red"] = StaticText(_("Cancel"))
+		self["key_green"] = StaticText(_("Save"))
 
 	def createSetup(self):
 		self.list = []

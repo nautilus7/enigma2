@@ -1,13 +1,13 @@
-from Components.GUIComponent import GUIComponent
-from Screens.Screen import Screen
-from Screens.AudioSelection import AudioSelection
 from Components.ActionMap import ActionMap
-from Components.Label import Label
-from ServiceReference import ServiceReference
-from enigma import eListboxPythonMultiContent, eListbox, gFont, iServiceInformation, eServiceCenter, eDVBFrontendParametersSatellite, RT_HALIGN_LEFT, RT_VALIGN_CENTER
-from Tools.Transponder import ConvertToHumanReadable, getChannelNumber
-from skin import fonts, parameters
+from Components.GUIComponent import GUIComponent
+from Components.Sources.StaticText import StaticText
 
+from enigma import RT_HALIGN_LEFT, RT_VALIGN_CENTER, eDVBFrontendParametersSatellite, eListbox, eListboxPythonMultiContent, eServiceCenter, gFont, iServiceInformation
+
+from ServiceReference import ServiceReference
+from skin import fonts, parameters
+from Tools.Transponder import ConvertToHumanReadable
+from Screens.Screen import Screen
 
 TYPE_TEXT = 0
 TYPE_VALUE_HEX = 1
@@ -93,8 +93,8 @@ class ServiceInfo(Screen):
 
 		self["infolist"] = ServiceInfoList([])
 		self.setTitle(_("Service info"))
-		self["key_red"] = self["red"] = Label(_("Exit"))
-		self["key_green"] = self["green"] = Label(_("ECM Info"))
+		self["key_red"] = StaticText(_("Exit"))
+		self["key_green"] = StaticText(_("ECM Info"))
 
 		self.transponder_info = self.info = self.feinfo = None
 		play_service = session.nav.getCurrentlyPlayingServiceReference()
@@ -114,9 +114,9 @@ class ServiceInfo(Screen):
 					self.feinfo = None
 					serviceref = play_service
 					self.transponder_info = serviceref and eServiceCenter.getInstance().info(serviceref).getInfoObject(serviceref, iServiceInformation.sTransponderData)
-			self["key_yellow"] = self["yellow"] = Label(_("Service & PIDs"))
+			self["key_yellow"] = StaticText(_("Service & PIDs"))
 			if self.feinfo or self.transponder_info:
-				self["key_blue"] = self["blue"] = Label(_("Tuner setting values"))
+				self["key_blue"] = StaticText(_("Tuner setting values"))
 			else:
 				self.skinName = "ServiceInfoSimple"
 

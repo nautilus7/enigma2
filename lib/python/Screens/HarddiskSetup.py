@@ -1,10 +1,10 @@
-from Screens.Screen import Screen
 from Components.ActionMap import ActionMap
 from Components.Harddisk import harddiskmanager
-from Components.MenuList import MenuList
 from Components.Label import Label
-from Components.Pixmap import Pixmap
+from Components.MenuList import MenuList
+from Components.Sources.StaticText import StaticText
 from Screens.MessageBox import MessageBox
+from Screens.Screen import Screen
 
 
 class HarddiskSetup(Screen):
@@ -16,8 +16,8 @@ class HarddiskSetup(Screen):
 		self["model"] = Label(_("Model: ") + hdd.model())
 		self["capacity"] = Label(_("Capacity: ") + hdd.capacity())
 		self["bus"] = Label(_("Bus: ") + hdd.bus())
-		self["key_red"] = Label(_("Cancel"))
-		self["key_green"] = Label(text) # text can be either "Initialize" or "Check"
+		self["key_red"] = StaticText(_("Cancel"))
+		self["key_green"] = StaticText(text) # text can be either "Initialize" or "Check"
 		self["actions"] = ActionMap(["OkCancelActions"],
 		{
 			"ok": self.hddQuestion,
@@ -58,8 +58,8 @@ class HarddiskSelection(Screen):
 			self["hddlist"] = MenuList(tlist)
 		else:
 			self["hddlist"] = MenuList(harddiskmanager.HDDList())
-		self["key_red"] = Label(_("Cancel"))
-		self["key_green"] = Label(_("Select"))
+		self["key_red"] = StaticText(_("Cancel"))
+		self["key_green"] = StaticText(_("Select"))
 		self["actions"] = ActionMap(["OkCancelActions"],
 		{
 			"ok": self.okbuttonClick,
@@ -82,9 +82,8 @@ class HarddiskSelection(Screen):
 		if selection[1] != 0:
 			self.doIt(selection[1])
 
+
 # This is actually just HarddiskSelection but with correct type
-
-
 class HarddiskFsckSelection(HarddiskSelection):
 	def doIt(self, selection):
 		self.session.openWithCallback(self.close, HarddiskSetup, selection,

@@ -1,31 +1,22 @@
-from Screens.Screen import Screen
 from Components.ActionMap import ActionMap
-from Components.Pixmap import Pixmap
-from Components.Label import Label
-from Components.PluginComponent import plugins
 from Components.config import config, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
+from Components.PluginComponent import plugins
+from Components.Sources.StaticText import StaticText
+from Screens.Screen import Screen
 
 addnotifier = None
 
 
 class GraphMultiEpgSetup(ConfigListScreen, Screen):
-	skin = """
-		<screen name="GraphMultiEPGSetup" position="center,center" size="560,490" title="Electronic Program Guide Setup">
-			<ePixmap pixmap="buttons/red.png" position="0,0" size="140,40" alphatest="on" />
-			<ePixmap pixmap="buttons/green.png" position="140,0" size="140,40" alphatest="on" />
-			<widget name="key_red" position="0,0" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#9f1313" transparent="1" />
-			<widget name="key_green" position="140,0" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#1f771f" transparent="1" />
-			<widget name="config" position="10,50" size="550,430" />
-		</screen>"""
 
 	def __init__(self, session, args=None):
 		Screen.__init__(self, session)
 		self.setTitle(_("GraphMultiEpg Settings"))
 		self.skinName = ["GraphMultiEpgSetup", "Setup"]
 
-		self["key_red"] = Label(_("Cancel"))
-		self["key_green"] = Label(_("Save"))
+		self["key_red"] = StaticText(_("Cancel"))
+		self["key_green"] = StaticText(_("Save"))
 
 		self["actions"] = ActionMap(["SetupActions", "MenuActions", "ColorActions"],
 		{

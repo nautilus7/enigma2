@@ -1,33 +1,32 @@
-from enigma import eTimer, eDVBSatelliteEquipmentControl, eDVBResourceManager, eDVBDiseqcCommand, eDVBFrontendParametersSatellite, iDVBFrontend
-
-from Screens.Screen import Screen
-from Screens.MessageBox import MessageBox
-from Screens.ChoiceBox import ChoiceBox
-from Screens.Satconfig import NimSetup
-from Screens.InfoBar import InfoBar
-from Components.Label import Label
-from Components.Button import Button
-from Components.Sources.StaticText import StaticText
-from Components.ConfigList import ConfigList, ConfigListScreen
-from Components.TunerInfo import TunerInfo
-from Components.ActionMap import NumberActionMap, ActionMap
-from Components.NimManager import nimmanager
-from Components.MenuList import MenuList
-from Components.ScrollLabel import ScrollLabel
-from Components.config import config, ConfigSatlist, ConfigNothing, ConfigSelection, ConfigSubsection, ConfigInteger, ConfigFloat, KEY_LEFT, KEY_RIGHT, KEY_0, getConfigListEntry, NoSave
-from Components.TuneTest import Tuner
-from Components.Pixmap import Pixmap
-from Tools.Transponder import ConvertToHumanReadable
-from skin import parameters
-
-from time import sleep
 from operator import mul as mul
 from random import SystemRandom as SystemRandom
-from threading import Thread as Thread
 from threading import Event as Event
+from threading import Thread as Thread
+from time import sleep
 
-from . import log
-from . import rotor_calc
+from Components.ActionMap import ActionMap, NumberActionMap
+from Components.config import KEY_0, KEY_LEFT, KEY_RIGHT, ConfigFloat, ConfigInteger, ConfigNothing, ConfigSatlist, ConfigSelection, ConfigSubsection, NoSave, config, getConfigListEntry
+from Components.ConfigList import ConfigList, ConfigListScreen
+from Components.Label import Label
+from Components.MenuList import MenuList
+from Components.NimManager import nimmanager
+from Components.Pixmap import Pixmap
+from Components.ScrollLabel import ScrollLabel
+from Components.Sources.StaticText import StaticText
+from Components.TunerInfo import TunerInfo
+from Components.TuneTest import Tuner
+
+from enigma import eDVBDiseqcCommand, eDVBFrontendParametersSatellite, eDVBResourceManager, eDVBSatelliteEquipmentControl, eTimer, iDVBFrontend
+
+from Screens.ChoiceBox import ChoiceBox
+from Screens.InfoBar import InfoBar
+from Screens.MessageBox import MessageBox
+from Screens.Satconfig import NimSetup
+from Screens.Screen import Screen
+from skin import parameters
+from Tools.Transponder import ConvertToHumanReadable
+
+from . import log, rotor_calc
 
 
 class PositionerSetup(Screen):
@@ -176,14 +175,10 @@ class PositionerSetup(Screen):
 		self.isMoving = False
 		self.stopOnLock = False
 
-		self.red = Button("")
-		self["key_red"] = self.red
-		self.green = Button("")
-		self["key_green"] = self.green
-		self.yellow = Button("")
-		self["key_yellow"] = self.yellow
-		self.blue = Button("")
-		self["key_blue"] = self.blue
+		self["key_red"] = StaticText("")
+		self["key_green"] = StaticText("")
+		self["key_yellow"] = StaticText("")
+		self["key_blue"] = StaticText("")
 
 		self.list = []
 		self["list"] = ConfigList(self.list)
@@ -506,53 +501,53 @@ class PositionerSetup(Screen):
 		if self.frontend is None:
 			return
 		if entry == "tune":
-			self.red.setText(_("Tune"))
-			self.green.setText(_("Auto focus"))
-			self.yellow.setText(_("Calibrate"))
-			self.blue.setText(_("Calculate"))
+			self["red"].setText(_("Tune"))
+			self["green"].setText(_("Auto focus"))
+			self["yellow"].setText(_("Calibrate"))
+			self["blue"].setText(_("Calculate"))
 		elif entry == "move":
 			if self.isMoving:
-				self.red.setText(_("Stop"))
-				self.green.setText(_("Stop"))
-				self.yellow.setText(_("Stop"))
-				self.blue.setText(_("Stop"))
+				self["red"].setText(_("Stop"))
+				self["green"].setText(_("Stop"))
+				self["yellow"].setText(_("Stop"))
+				self["blue"].setText(_("Stop"))
 			else:
-				self.red.setText(_("Move west"))
-				self.green.setText(_("Search west"))
-				self.yellow.setText(_("Search east"))
-				self.blue.setText(_("Move east"))
+				self["red"].setText(_("Move west"))
+				self["green"].setText(_("Search west"))
+				self["yellow"].setText(_("Search east"))
+				self["blue"].setText(_("Move east"))
 		elif entry == "finemove":
-			self.red.setText("")
-			self.green.setText(_("Step west"))
-			self.yellow.setText(_("Step east"))
-			self.blue.setText("")
+			self["red"].setText("")
+			self["green"].setText(_("Step west"))
+			self["yellow"].setText(_("Step east"))
+			self["blue"].setText("")
 		elif entry == "limits":
-			self.red.setText(_("Limits off"))
-			self.green.setText(_("Limit west"))
-			self.yellow.setText(_("Limit east"))
-			self.blue.setText(_("Limits on"))
+			self["red"].setText(_("Limits off"))
+			self["green"].setText(_("Limit west"))
+			self["yellow"].setText(_("Limit east"))
+			self["blue"].setText(_("Limits on"))
 		elif entry == "storage":
-			self.red.setText("")
+			self["red"].setText("")
 			if not self.getUsals():
-				self.green.setText(_("Store position"))
-				self.yellow.setText(_("Goto position"))
+				self["green"].setText(_("Store position"))
+				self["yellow"].setText(_("Goto position"))
 			else:
-				self.green.setText("")
-				self.yellow.setText("")
+				self["green"].setText("")
+				self["yellow"].setText("")
 			if self.advanced and not self.getUsals():
-				self.blue.setText(_("Allocate"))
+				self["blue"].setText(_("Allocate"))
 			else:
-				self.blue.setText("")
+				self["blue"].setText("")
 		elif entry == "goto":
-			self.red.setText("")
-			self.green.setText(_("Goto 0"))
-			self.yellow.setText(_("Goto X"))
-			self.blue.setText("")
+			self["red"].setText("")
+			self["green"].setText(_("Goto 0"))
+			self["yellow"].setText(_("Goto X"))
+			self["blue"].setText("")
 		else:
-			self.red.setText("")
-			self.green.setText("")
-			self.yellow.setText("")
-			self.blue.setText("")
+			self["red"].setText("")
+			self["green"].setText("")
+			self["yellow"].setText("")
+			self["blue"].setText("")
 
 	def printMsg(self, msg):
 		print(msg)
@@ -1328,9 +1323,9 @@ class PositionerSetupLog(Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
 		self.setTitle(_("Positioner setup log"))
-		self["key_red"] = Button(_("Exit"))
-		self["key_green"] = Button(_("Save"))
-		self["key_blue"] = Button(_("Clear"))
+		self["key_red"] = StaticText(_("Exit"))
+		self["key_green"] = StaticText(_("Save"))
+		self["key_blue"] = StaticText(_("Clear"))
 		self["list"] = ScrollLabel(log.getvalue())
 		self["actions"] = ActionMap(["DirectionActions", "OkCancelActions", "ColorActions"],
 		{

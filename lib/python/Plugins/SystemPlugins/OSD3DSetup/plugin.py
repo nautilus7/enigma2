@@ -1,11 +1,14 @@
-from Screens.Screen import Screen
-from Screens.ChannelSelection import FLAG_IS_DEDICATED_3D
-from Components.Label import Label
+from Components.ActionMap import ActionMap
+from Components.config import ConfigInteger, ConfigSelection, ConfigSlider, ConfigSubsection, config, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
 from Components.ServiceEventTracker import ServiceEventTracker
+from Components.Sources.StaticText import StaticText
 from Components.SystemInfo import SystemInfo
-from Components.config import config, ConfigSubsection, ConfigInteger, ConfigSelection, ConfigSlider, getConfigListEntry
-from enigma import iPlayableService, iServiceInformation, eServiceCenter, eServiceReference, eDVBDB
+
+from enigma import eDVBDB, eServiceCenter, eServiceReference, iPlayableService, iServiceInformation
+
+from Screens.ChannelSelection import FLAG_IS_DEDICATED_3D
+from Screens.Screen import Screen
 
 modelist = {"off": _("Off"), "auto": _("Auto"), "sidebyside": _("Side by side"), "topandbottom": _("Top and bottom")}
 
@@ -20,11 +23,8 @@ class OSD3DSetupScreen(ConfigListScreen, Screen):
 
 		self.setTitle(_("OSD 3D setup"))
 
-		from Components.ActionMap import ActionMap
-		from Components.Button import Button
-
-		self["key_red"] = Label(_("Cancel"))
-		self["key_green"] = Label(_("Save"))
+		self["key_red"] = StaticText(_("Cancel"))
+		self["key_green"] = StaticText(_("Save"))
 
 		self["actions"] = ActionMap(["SetupActions", "ColorActions", "MenuActions"],
 		{

@@ -1,27 +1,29 @@
-from Screens.Screen import Screen
-from Screens.ParentalControlSetup import ProtectedScreen
-from enigma import eConsoleAppContainer, eDVBDB, eTimer
+from os import unlink
+from os.path import isfile, normpath
+from time import time
 
 from Components.ActionMap import ActionMap, NumberActionMap
-from Components.config import config, ConfigSubsection, ConfigText
-from Components.PluginComponent import plugins
-from Components.PluginList import *
-from Components.Label import Label
-from Components.International import international
-from Components.ServiceList import refreshServiceList
+from Components.config import ConfigSubsection, ConfigText, config
 from Components.Harddisk import harddiskmanager
+from Components.International import international
+from Components.Label import Label
+from Components.Opkg import enumPlugins, opkgAddDestination, opkgExtraDestinations
+from Components.PluginComponent import plugins
+from Components.PluginList import PluginList, PluginEntryComponent
+from Components.ServiceList import refreshServiceList
 from Components.Sources.StaticText import StaticText
 from Components.SystemInfo import SystemInfo, hassoftcaminstalled
-from Components import Opkg
-from Screens.MessageBox import MessageBox
+
+from enigma import eConsoleAppContainer, eDVBDB, eTimer
+
+from Plugins.Plugin import PluginDescriptor
+from Tools.Directories import SCOPE_CURRENT_SKIN, SCOPE_PLUGINS, fileExists, resolveFilename
+from Tools.LoadPixmap import LoadPixmap
 from Screens.ChoiceBox import ChoiceBox
 from Screens.Console import Console
-from Plugins.Plugin import PluginDescriptor
-from Tools.Directories import fileExists, resolveFilename, SCOPE_PLUGINS, SCOPE_CURRENT_SKIN
-from Tools.LoadPixmap import LoadPixmap
-
-from time import time
-import os
+from Screens.MessageBox import MessageBox
+from Screens.ParentalControlSetup import ProtectedScreen
+from Screens.Screen import Screen
 
 international.addCallback(plugins.reloadPlugins)
 
@@ -57,8 +59,8 @@ class PluginBrowser(Screen, ProtectedScreen):
 
 		self.firsttime = True
 
-		self["key_red"] = self["red"] = Label(_("Remove plugins"))
-		self["key_green"] = self["green"] = Label(_("Download plugins"))
+		self["key_red"] = StaticText(_("Remove plugins"))
+		self["key_green"] = StaticText(_("Download plugins"))
 		self.list = []
 		self["list"] = PluginList(self.list)
 
@@ -283,7 +285,7 @@ class PluginDownloadBrowser(Screen):
 			"ok": self.go,
 			"back": self.requestClose,
 		})
-		if os.path.isfile('/usr/bin/opkg'):
+		if isfile('/usr/bin/opkg'):
 			self.opkg = '/usr/bin/opkg'
 			self.opkg_install = self.opkg + ' install'
 			self.opkg_remove = self.opkg + ' remove --autoremove'
@@ -339,9 +341,9 @@ class PluginDownloadBrowser(Screen):
 			dest = result[1]
 			if dest.startswith('/'):
 				# Custom install path, add it to the list too
-				dest = os.path.normpath(dest)
+				dest = normpath(dest)
 				extra = '--add-dest %s:%s -d %s' % (dest, dest, dest)
-				Opkg.opkgAddDestination(dest)
+				opkgAddDestination(dest)
 			else:
 				extra = '-d ' + dest
 			self.doInstall(self.installFinished, self["list"].l.getCurrentSelection()[0].name + ' ' + extra)
@@ -375,7 +377,7 @@ class PluginDownloadBrowser(Screen):
 
 	def doRemove(self, callback, pkgname):
 		pkgname = self.PLUGIN_PREFIX + pkgname
-		self.session.openWithCallback(callback, Console, cmdlist=[self.opkg_remove + Opkg.opkgExtraDestinations() + " " + pkgname, "sync"], skin="Console_Pig")
+		self.session.openWithCallback(callback, Console, cmdlist=[self.opkg_remove + opkgExtraDestinations() + " " + pkgname, "sync"], skin="Console_Pig")
 
 	def doInstall(self, callback, pkgname):
 		pkgname = self.PLUGIN_PREFIX + pkgname
@@ -389,10 +391,10 @@ class PluginDownloadBrowser(Screen):
 		self.doInstall(self.installFinished, self.install_settings_name)
 
 	def startOpkgListInstalled(self, pkgname=PLUGIN_PREFIX + '*'):
-		self.container.execute(self.opkg + Opkg.opkgExtraDestinations() + " list_installed '%s'" % pkgname)
+		self.container.execute(self.opkg + opkgExtraDestinations() + " list_installed '%s'" % pkgname)
 
 	def startOpkgListAvailable(self):
-		self.container.execute(self.opkg + Opkg.opkgExtraDestinations() + " list '" + self.PLUGIN_PREFIX + "*'")
+		self.container.execute(self.opkg + opkgExtraDestinations() + " list '" + self.PLUGIN_PREFIX + "*'")
 
 	def startRun(self):
 		listsize = self["list"].instance.size()
@@ -419,7 +421,7 @@ class PluginDownloadBrowser(Screen):
 				print("[PluginBrowser] postInstallCall failed:", ex)
 			self.resetPostInstall()
 		try:
-			os.unlink('/tmp/opkg.conf')
+			unlink('/tmp/opkg.conf')
 		except:
 			pass
 		for plugin in self.pluginlist:
@@ -449,7 +451,7 @@ class PluginDownloadBrowser(Screen):
 			self.run = 2
 			pluginlist = []
 			self.pluginlist = pluginlist
-			for plugin in Opkg.enumPlugins(self.PLUGIN_PREFIX):
+			for plugin in enumPlugins(self.PLUGIN_PREFIX):
 				if plugin[0] not in self.installedplugins:
 					pluginlist.append(plugin + (plugin[0][15:],))
 			if pluginlist:

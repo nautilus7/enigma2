@@ -1,13 +1,16 @@
-from Screens.Screen import Screen
-import Screens.InfoBar
-from Components.ServiceScan import ServiceScan as CScan
-from Components.ProgressBar import ProgressBar
-from Components.Label import Label
 from Components.ActionMap import ActionMap
-from Components.FIFOList import FIFOList
-from Components.Sources.FrontendInfo import FrontendInfo
 from Components.config import config
+from Components.FIFOList import FIFOList
+from Components.Label import Label
+from Components.ProgressBar import ProgressBar
+from Components.ServiceScan import ServiceScan as CScan
+from Components.Sources.FrontendInfo import FrontendInfo
+from Components.Sources.StaticText import StaticText
+
 from enigma import eServiceReference
+
+from Screens.InfoBar import InfoBar
+from Screens.Screen import Screen
 
 
 class ServiceScanSummary(Screen):
@@ -72,7 +75,7 @@ class ServiceScan(Screen):
 		self.scanList = scanList
 
 		if hasattr(session, 'infobar'):
-			self.currentInfobar = Screens.InfoBar.InfoBar.instance
+			self.currentInfobar = InfoBar.instance
 			self.currentServiceList = self.currentInfobar.servicelist
 			if self.session.pipshown and self.currentServiceList:
 				if self.currentServiceList.dopipzap:
@@ -93,8 +96,8 @@ class ServiceScan(Screen):
 		self["pass"] = Label("")
 		self["servicelist"] = FIFOList()
 		self["FrontendInfo"] = FrontendInfo()
-		self["key_red"] = Label(_("Cancel"))
-		self["key_green"] = Label(_("OK"))
+		self["key_red"] = StaticText(_("Cancel"))
+		self["key_green"] = StaticText(_("OK"))
 
 		self["actions"] = ActionMap(["SetupActions", "MenuActions"],
 		{

@@ -1,34 +1,24 @@
-#
-# Generic Screen to select a path/filename combination
-#
+from os import statvfs
+from os.path import exists, join as pathjoin
 
-# GUI (Screens)
-from Screens.Screen import Screen
-from Screens.MessageBox import MessageBox
-from Screens.InputBox import InputBox
-from Screens.HelpMenu import HelpableScreen
-from Screens.ChoiceBox import ChoiceBox
-
-# Generic
-from Tools.BoundFunction import boundFunction
-from Tools.Directories import createDir as directories_createDir, removeDir as directories_removeDir
+from Components.ActionMap import HelpableActionMap, NumberActionMap
 from Components.config import config
-import os
-
-# Quickselect
-from Tools.NumericalTextInput import NumericalTextInput
-
-# GUI (Components)
-from Components.ActionMap import NumberActionMap, HelpableActionMap
+from Components.FileList import FileList
 from Components.Label import Label
+from Components.MenuList import MenuList
 from Components.Pixmap import Pixmap
 from Components.Sources.StaticText import StaticText
-from Components.Button import Button
-from Components.FileList import FileList
-from Components.MenuList import MenuList
 
-# Timer
 from enigma import eTimer
+
+from Tools.BoundFunction import boundFunction
+from Tools.Directories import createDir as directories_createDir, removeDir as directories_removeDir
+from Tools.NumericalTextInput import NumericalTextInput
+from Screens.ChoiceBox import ChoiceBox
+from Screens.HelpMenu import HelpableScreen
+from Screens.InputBox import InputBox
+from Screens.MessageBox import MessageBox
+from Screens.Screen import Screen
 
 defaultInhibitDirs = ["/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/sbin", "/sys", "/var"]
 
@@ -92,8 +82,8 @@ class LocationBox(Screen, NumericalTextInput, HelpableScreen):
 		self["booklist"] = MenuList(self.bookmarks)
 
 		# Buttons
-		self["key_green"] = Button(_("OK"))
-		self["key_red"] = Button(_("Cancel"))
+		self["key_green"] = StaticText(_("OK"))
+		self["key_red"] = StaticText(_("Cancel"))
 		self["key_yellow"] = StaticText(_("Rename"))
 		self["key_blue"] = StaticText(_("Remove bookmark") if self.realBookmarks else '')
 
@@ -264,8 +254,8 @@ class LocationBox(Screen, NumericalTextInput, HelpableScreen):
 
 	def createDirCallback(self, res):
 		if res:
-			path = os.path.join(self["filelist"].current_directory, res)
-			if not os.path.exists(path):
+			path = pathjoin(self["filelist"].current_directory, res)
+			if not exists(path):
 				if not directories_createDir(path):
 					self.session.open(
 						MessageBox,
@@ -284,7 +274,7 @@ class LocationBox(Screen, NumericalTextInput, HelpableScreen):
 
 	def removeDir(self):
 		sel = self["filelist"].getSelection()
-		if sel and os.path.exists(sel[0]):
+		if sel and exists(sel[0]):
 			self.session.openWithCallback(
 				boundFunction(self.removeDirCallback, sel[0]),
 				MessageBox,
@@ -364,7 +354,7 @@ class LocationBox(Screen, NumericalTextInput, HelpableScreen):
 					self.realBookmarks.value = self.bookmarks
 					self.realBookmarks.save()
 
-				if self.filename and not os.path.exists(ret):
+				if self.filename and not exists(ret):
 					menu = [(_("Create new folder and exit"), "folder"), (_("Save and exit"), "exit")]
 					text = _("Select action")
 
@@ -390,7 +380,7 @@ class LocationBox(Screen, NumericalTextInput, HelpableScreen):
 			if self.minFree is not None:
 				# Try to read fs stats
 				try:
-					s = os.statvfs(currentFolder)
+					s = statvfs(currentFolder)
 					if (s.f_bavail * s.f_bsize) / 1000000 > self.minFree:
 						# Automatically confirm if we have enough free disk Space available
 						return self.selectConfirmed(True)

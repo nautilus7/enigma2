@@ -1,40 +1,43 @@
-from skin import parseColor, parseFont
-from Components.config import config, ConfigClock, ConfigInteger, ConfigSubsection, ConfigYesNo, ConfigSelection, ConfigSelectionNumber
-from Components.Pixmap import Pixmap
-from Components.Button import Button
+from time import localtime, mktime, strftime, time
+
 from Components.ActionMap import HelpableActionMap
-from Components.GUIComponent import GUIComponent
+from Components.config import ConfigClock, ConfigInteger, ConfigSelection, ConfigSelectionNumber, ConfigSubsection, ConfigYesNo, config
 from Components.EpgList import Rect
-from Components.Sources.Event import Event
-from Components.MultiContent import MultiContentEntryText, MultiContentEntryPixmapAlphaBlend
-from Components.TimerList import TimerList
-from Components.Renderer.Picon import getPiconName
-from Components.Sources.ServiceEvent import ServiceEvent
-from Components.UsageConfig import preferredTimerPath
-import Screens.InfoBar
-from Screens.Screen import Screen
-from Screens.HelpMenu import HelpableScreen
-from Screens.EventView import EventViewEPGSelect
-from Screens.InputBox import PinInput
-from Screens.TimeDateInput import TimeDateInput
-from Screens.TimerEntry import TimerEntry
-from Screens.EpgSelection import EPGSelection
-from Screens.TimerEdit import TimerSanityConflict, TimerEditList
-from Screens.MessageBox import MessageBox
-from Screens.ChoiceBox import ChoiceBox
-from Tools.Directories import resolveFilename, SCOPE_CURRENT_SKIN
-from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT, createRecordTimerEntry
-from ServiceReference import ServiceReference, isPlayableForCur
-from Tools.LoadPixmap import LoadPixmap
-from Tools.Alternatives import CompareWithAlternatives
-from Tools.FallbackTimer import FallbackTimerList
-from Tools.TextBoundary import getTextBoundarySize
-from enigma import eEPGCache, eListbox, gFont, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_WRAP, BT_SCALE, BT_KEEP_ASPECT_RATIO, BT_ALIGN_CENTER, eSize, eRect, eTimer, eServiceReference
-from Plugins.Extensions.GraphMultiEPG.GraphMultiEpgSetup import GraphMultiEpgSetup
-from time import localtime, time, strftime, mktime
+from Components.GUIComponent import GUIComponent
+from Components.MultiContent import MultiContentEntryPixmapAlphaBlend, MultiContentEntryText
+from Components.Pixmap import Pixmap
 from Components.PluginComponent import plugins
+from Components.Renderer.Picon import getPiconName
+from Components.Sources.Event import Event
+from Components.Sources.ServiceEvent import ServiceEvent
+from Components.Sources.StaticText import StaticText
+from Components.UsageConfig import preferredTimerPath
+
+from enigma import BT_ALIGN_CENTER, BT_KEEP_ASPECT_RATIO, BT_SCALE, RT_HALIGN_CENTER, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_VALIGN_CENTER, RT_WRAP, eEPGCache, eListbox, eListboxPythonMultiContent, eRect, eServiceReference, eSize, eTimer, gFont
+
+from Plugins.Extensions.GraphMultiEPG.GraphMultiEpgSetup import GraphMultiEpgSetup
 from Plugins.Plugin import PluginDescriptor
+
+from RecordTimer import AFTEREVENT, RecordTimerEntry, createRecordTimerEntry, parseEvent
+from Screens.ChoiceBox import ChoiceBox
+from Screens.EpgSelection import EPGSelection
+from Screens.EventView import EventViewEPGSelect
+from Screens.HelpMenu import HelpableScreen
+from Screens.InfoBar import InfoBar
+from Screens.InputBox import PinInput
+from Screens.MessageBox import MessageBox
+from Screens.Screen import Screen
+from Screens.TimeDateInput import TimeDateInput
+from Screens.TimerEdit import TimerEditList, TimerSanityConflict
+from Screens.TimerEntry import TimerEntry
+from ServiceReference import ServiceReference, isPlayableForCur
+from skin import parseColor, parseFont
+from Tools.Alternatives import CompareWithAlternatives
 from Tools.BoundFunction import boundFunction
+from Tools.Directories import SCOPE_CURRENT_SKIN, resolveFilename
+from Tools.FallbackTimer import FallbackTimerList
+from Tools.LoadPixmap import LoadPixmap
+from Tools.TextBoundary import getTextBoundarySize
 
 MAX_TIMELINES = 6
 
@@ -355,11 +358,11 @@ class EPGList(GUIComponent):
 		event = self.getEventFromId(service, eventid) # get full event info
 		return (event, service)
 
-	def connectSelectionChanged(func):
+	def connectSelectionChanged(self, func):
 		if not self.onSelChanged.count(func):
 			self.onSelChanged.append(func)
 
-	def disconnectSelectionChanged(func):
+	def disconnectSelectionChanged(self, func):
 		self.onSelChanged.remove(func)
 
 	def serviceChanged(self):
@@ -886,17 +889,17 @@ class GraphMultiEPG(Screen, HelpableScreen):
 		self.serviceref = None
 		now = time() - config.epg.histminutes.getValue() * 60
 		self.ask_time = now - now % int(config.misc.graph_mepg.roundTo.getValue())
-		self["key_red"] = Button("")
-		self["key_green"] = Button("")
+		self["key_red"] = StaticText("")
+		self["key_green"] = StaticText("")
 
 		global listscreen
 		if listscreen:
-			self["key_yellow"] = Button(_("Normal mode"))
+			self["key_yellow"] = StaticText(_("Normal mode"))
 			self.skinName = "GraphMultiEPGList"
 		else:
-			self["key_yellow"] = Button(_("List mode"))
+			self["key_yellow"] = StaticText(_("List mode"))
 
-		self["key_blue"] = Button(_("Prime time"))
+		self["key_blue"] = StaticText(_("Prime time"))
 
 		self.key_green_choice = self.EMPTY
 		self.key_red_choice = self.EMPTY
@@ -1223,11 +1226,11 @@ class GraphMultiEPG(Screen, HelpableScreen):
 	def doRefresh(self, answer):
 		l = self["list"]
 		l.moveToService(self.serviceref)
-		l.setCurrentlyPlaying(Screens.InfoBar.InfoBar.instance.servicelist.getCurrentSelection())
+		l.setCurrentlyPlaying(InfoBar.instance.servicelist.getCurrentSelection())
 		self.moveTimeLines()
 
 	def onCreate(self):
-		self.serviceref = self.serviceref or Screens.InfoBar.InfoBar.instance.servicelist.getCurrentSelection()
+		self.serviceref = self.serviceref or InfoBar.instance.servicelist.getCurrentSelection()
 		l = self["list"]
 		l.setShowServiceMode(config.misc.graph_mepg.servicetitle_mode.value)
 		self["timeline_text"].setDateFormat(config.misc.graph_mepg.servicetitle_mode.value)
@@ -1423,7 +1426,7 @@ class GraphMultiEPG(Screen, HelpableScreen):
 							self.session.nav.RecordTimer.timeChanged(x)
 					simulTimerList = self.session.nav.RecordTimer.record(entry)
 					if simulTimerList is not None:
-						self.session.openWithCallback(boundFunction(self.finishedEdit, service_ref, begin, end), TimerSanityConflict, simulTimerList)
+						self.session.openWithCallback(boundFunction(self.finishedEdit, entry.service_ref, entry.begin, entry.end), TimerSanityConflict, simulTimerList)
 						return
 					else:
 						self.session.nav.RecordTimer.timeChanged(entry)

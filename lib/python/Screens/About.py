@@ -1,25 +1,24 @@
-from Screens.Screen import Screen
-from Screens.MessageBox import MessageBox
-from Components.config import config
-from Components.ActionMap import ActionMap
-from Components.Sources.StaticText import StaticText
-from Components.Harddisk import harddiskmanager
-from Components.NimManager import nimmanager
+from os import remove
+from os.path import getmtime, isdir, isfile
+
 from Components.About import about
+from Components.ActionMap import ActionMap
+from Components.config import config
+from Components.GUIComponent import GUIComponent
+from Components.Harddisk import harddiskmanager
+from Components.Label import Label
+from Components.NimManager import nimmanager
+from Components.ProgressBar import ProgressBar
 from Components.ScrollLabel import ScrollLabel
-from Components.Button import Button
+from Components.Sources.StaticText import StaticText
 from Components.SystemInfo import SystemInfo
 
-from Components.Label import Label
-from Components.ProgressBar import ProgressBar
+from enigma import eConsoleAppContainer, eGetEnigmaDebugLvl, eLabel, eTimer, getDesktop
 
-from Tools.StbHardware import getFPVersion
-from enigma import eTimer, eLabel, eConsoleAppContainer, getDesktop, eGetEnigmaDebugLvl
-
-from Components.GUIComponent import GUIComponent
 from skin import parameters
-
-import os
+from Tools.StbHardware import getFPVersion
+from Screens.MessageBox import MessageBox
+from Screens.Screen import Screen
 
 
 class About(Screen):
@@ -58,7 +57,7 @@ class About(Screen):
 		ffmpegVersion = _("Media player: ffmpeg, version ") + about.getffmpegVersionString()
 		self["ffmpegVersion"] = StaticText(ffmpegVersion)
 
-		if cpu.upper().startswith('HI') or os.path.isdir('/proc/hisi'):
+		if cpu.upper().startswith('HI') or isdir('/proc/hisi'):
 			AboutText += ffmpegVersion + "\n"
 		else:
 			AboutText += GStreamerVersion + "\n"
@@ -117,10 +116,10 @@ class About(Screen):
 			AboutText += "\n\n" + _("HDMI-CEC address") + ": " + address
 
 		self["AboutScrollLabel"] = ScrollLabel(AboutText)
-		self["key_green"] = Button(_("Translations"))
-		self["key_red"] = Button(_("Latest Commits"))
-		self["key_yellow"] = Button(_("Troubleshoot"))
-		self["key_blue"] = Button(_("Memory Info"))
+		self["key_green"] = StaticText(_("Translations"))
+		self["key_red"] = StaticText(_("Latest Commits"))
+		self["key_yellow"] = StaticText(_("Troubleshoot"))
+		self["key_blue"] = StaticText(_("Memory Info"))
 
 		self["actions"] = ActionMap(["ColorActions", "SetupActions", "DirectionActions"],
 			{
@@ -151,7 +150,6 @@ class TranslationInfo(Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
 		self.setTitle(_("Translation"))
-		# don't remove the string out of the _(), or it can't be "translated" anymore.
 
 		# TRANSLATORS: Add here whatever should be shown in the "translator" about screen, up to 6 lines (use \n for newline)
 		info = _("TRANSLATOR_INFO")
@@ -169,7 +167,7 @@ class TranslationInfo(Screen):
 			infomap[type] = value
 		print(infomap)
 
-		self["key_red"] = Button(_("Cancel"))
+		self["key_red"] = StaticText(_("Cancel"))
 		self["TranslationInfo"] = StaticText(info)
 
 		translator_name = infomap.get("Language-Team", "none")
@@ -202,7 +200,7 @@ class CommitInfo(Screen):
 				"right": self.right
 			})
 
-		self["key_red"] = Button(_("Cancel"))
+		self["key_red"] = StaticText(_("Cancel"))
 
 		# get the branch to display from the Enigma version
 		try:
@@ -278,9 +276,9 @@ class MemoryInfo(Screen):
 				"blue": self.clearMemory,
 			})
 
-		self["key_red"] = Label(_("Cancel"))
-		self["key_green"] = Label(_("Refresh"))
-		self["key_blue"] = Label(_("Clear"))
+		self["key_red"] = StaticText(_("Cancel"))
+		self["key_green"] = StaticText(_("Refresh"))
+		self["key_blue"] = StaticText(_("Clear"))
 
 		self['lmemtext'] = Label()
 		self['lmemvalue'] = Label()
@@ -363,8 +361,8 @@ class Troubleshoot(Screen):
 		Screen.__init__(self, session)
 		self.setTitle(_("Troubleshoot"))
 		self["AboutScrollLabel"] = ScrollLabel(_("Please wait"))
-		self["key_red"] = Button()
-		self["key_green"] = Button()
+		self["key_red"] = StaticText("")
+		self["key_green"] = StaticText("")
 
 		self["actions"] = ActionMap(["OkCancelActions", "DirectionActions", "ColorActions"],
 			{
@@ -405,7 +403,7 @@ class Troubleshoot(Screen):
 	def green(self):
 		if self.commandIndex >= self.numberOfCommands:
 			try:
-				os.remove(self.commands[self.commandIndex][4:])
+				remove(self.commands[self.commandIndex][4:])
 			except:
 				pass
 			self.updateOptions()
@@ -415,7 +413,7 @@ class Troubleshoot(Screen):
 		if answer:
 			for fileName in self.getLogFilesList():
 				try:
-					os.remove(fileName)
+					remove(fileName)
 				except:
 					pass
 			self.updateOptions()
@@ -452,19 +450,19 @@ class Troubleshoot(Screen):
 
 	def getDebugFilesList(self):
 		import glob
-		return [x for x in sorted(glob.glob("/home/root/enigma.*.debuglog"), key=lambda x: os.path.isfile(x) and os.path.getmtime(x))]
+		return [x for x in sorted(glob.glob("/home/root/enigma.*.debuglog"), key=lambda x: isfile(x) and getmtime(x))]
 
 	def getLogFilesList(self):
 		import glob
 		home_root = "/home/root/enigma2_crash.log"
 		tmp = "/tmp/enigma2_crash.log"
-		return [x for x in sorted(glob.glob("/mnt/hdd/*.log"), key=lambda x: os.path.isfile(x) and os.path.getmtime(x))] + (os.path.isfile(home_root) and [home_root] or []) + (os.path.isfile(tmp) and [tmp] or [])
+		return [x for x in sorted(glob.glob("/mnt/hdd/*.log"), key=lambda x: isfile(x) and getmtime(x))] + (isfile(home_root) and [home_root] or []) + (isfile(tmp) and [tmp] or [])
 
 	def updateOptions(self):
 		self.titles = ["dmesg", "ifconfig", "df", "top", "ps", "messages"]
 		self.commands = ["dmesg", "ifconfig", "df -h", "top -n 1", "ps -l", "cat /var/volatile/log/messages"]
 		install_log = "/home/root/autoinstall.log"
-		if os.path.isfile(install_log):
+		if isfile(install_log):
 				self.titles.append("%s" % install_log)
 				self.commands.append("cat %s" % install_log)
 		self.numberOfCommands = len(self.commands)

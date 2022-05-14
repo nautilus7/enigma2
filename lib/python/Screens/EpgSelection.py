@@ -1,28 +1,29 @@
-from Screens.Screen import Screen
-from Screens import ChannelSelection
-import Screens.InfoBar
-from Components.config import config, ConfigClock
-from Components.Pixmap import Pixmap
-from Components.Label import Label
-from Components.EpgList import EPGList, EPG_TYPE_SINGLE, EPG_TYPE_SIMILAR, EPG_TYPE_MULTI
+from time import localtime, time
+
 from Components.ActionMap import ActionMap
-from Components.UsageConfig import preferredTimerPath
+from Components.config import ConfigClock, config
+from Components.EpgList import EPG_TYPE_MULTI, EPG_TYPE_SIMILAR, EPG_TYPE_SINGLE, EPGList
+from Components.Label import Label
+from Components.Pixmap import Pixmap
+from Components.PluginComponent import plugins
+from Components.Sources.Event import Event
 from Components.Sources.ServiceEvent import ServiceEvent
 from Components.Sources.StaticText import StaticText
-from Components.Sources.Event import Event
-from Screens.ChoiceBox import ChoiceBox
-from Screens.TimerEdit import TimerSanityConflict, TimerEditList
-from Screens.EventView import EventViewSimple
-from Screens.TimeDateInput import TimeDateInput
+from Components.UsageConfig import preferredTimerPath
 from enigma import eServiceReference
-from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT, createRecordTimerEntry
-from Screens.TimerEntry import TimerEntry
-from ServiceReference import ServiceReference
-from time import localtime, time
-from Components.PluginComponent import plugins
 from Plugins.Plugin import PluginDescriptor
+from RecordTimer import AFTEREVENT, RecordTimerEntry, createRecordTimerEntry, parseEvent
+from ServiceReference import ServiceReference
 from Tools.BoundFunction import boundFunction
 from Tools.FallbackTimer import FallbackTimerList
+from Screens import ChannelSelection
+from Screens.ChoiceBox import ChoiceBox
+from Screens.EventView import EventViewSimple
+from Screens.InfoBar import InfoBar
+from Screens.Screen import Screen
+from Screens.TimeDateInput import TimeDateInput
+from Screens.TimerEdit import TimerEditList, TimerSanityConflict
+from Screens.TimerEntry import TimerEntry
 
 mepg_config_initialized = False
 
@@ -47,9 +48,9 @@ class EPGSelection(Screen):
 		if isinstance(service, str) and eventid is not None:
 			self.type = EPG_TYPE_SIMILAR
 			self.setTitle(_("Similar EPG"))
-			self["key_yellow"] = StaticText()
-			self["key_blue"] = StaticText()
-			self["key_red"] = StaticText()
+			self["key_yellow"] = StaticText("")
+			self["key_blue"] = StaticText("")
+			self["key_red"] = StaticText("")
 			self.currentService = service
 			self.eventid = eventid
 			self.zapFunc = None
@@ -202,7 +203,7 @@ class EPGSelection(Screen):
 		l.recalcEntrySize()
 		if self.type == EPG_TYPE_MULTI:
 			l.fillMultiEPG(self.services, self.ask_time)
-			l.moveToService(Screens.InfoBar.InfoBar.instance and Screens.InfoBar.InfoBar.instance.servicelist.getCurrentSelection() or self.session.nav.getCurrentlyPlayingServiceOrGroup())
+			l.moveToService(InfoBar.instance and InfoBar.instance.servicelist.getCurrentSelection() or self.session.nav.getCurrentlyPlayingServiceOrGroup())
 		elif self.type == EPG_TYPE_SINGLE:
 			service = self.currentService
 			self["Service"].newService(service.ref)

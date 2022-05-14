@@ -1,52 +1,47 @@
-# -*- coding: UTF-8 -*-
-from Tools.Profile import profile
+from os import listdir, remove, rename
+from os.path import isdir
+from time import time
 
-from Screens.Screen import Screen
-import Screens.InfoBar
-from Screens.ScreenSaver import InfoBarScreenSaver
 import Components.ParentalControl
-from Components.Button import Button
-from Components.ServiceList import ServiceList, refreshServiceList
-from Components.ActionMap import NumberActionMap, ActionMap, HelpableActionMap
-from Components.MenuList import MenuList
-from Components.ServiceEventTracker import ServiceEventTracker, InfoBarBase
-profile("ChannelSelection.py 1")
-from Screens.EpgSelection import EPGSelection
-from enigma import eServiceReference, eEPGCache, eServiceCenter, eRCInput, eTimer, eDVBDB, iPlayableService, iServiceInformation, getPrevAsciiCode
-from Components.config import config, configfile, ConfigSubsection, ConfigText, ConfigYesNo
-from Tools.NumericalTextInput import NumericalTextInput
-profile("ChannelSelection.py 2")
-from Components.NimManager import nimmanager
-profile("ChannelSelection.py 2.1")
-from Components.Sources.RdsDecoder import RdsDecoder
-profile("ChannelSelection.py 2.2")
-from Components.Sources.ServiceEvent import ServiceEvent
-from Components.Sources.Event import Event
-profile("ChannelSelection.py 2.3")
+from Components.ActionMap import ActionMap, HelpableActionMap, NumberActionMap
+from Components.ChoiceList import ChoiceEntryComponent, ChoiceList
+from Components.config import ConfigSubsection, ConfigText, ConfigYesNo, config, configfile
 from Components.Input import Input
-profile("ChannelSelection.py 3")
-from Components.ChoiceList import ChoiceList, ChoiceEntryComponent
+from Components.MenuList import MenuList
+from Components.NimManager import nimmanager
+from Components.PluginComponent import plugins
+from Components.ServiceEventTracker import InfoBarBase, ServiceEventTracker
+from Components.ServiceList import ServiceList, refreshServiceList
+from Components.Sources.Event import Event
+from Components.Sources.RdsDecoder import RdsDecoder
+from Components.Sources.ServiceEvent import ServiceEvent
+from Components.Sources.StaticText import StaticText
 from Components.SystemInfo import SystemInfo
+
+from enigma import eDVBDB, eEPGCache, eRCInput, eServiceCenter, eServiceReference, eTimer, getPrevAsciiCode, iPlayableService, iServiceInformation
+
+from Plugins.Plugin import PluginDescriptor
+
+from ServiceReference import ServiceReference
+from Tools.Alternatives import GetWithAlternative
+from Tools.BoundFunction import boundFunction
+from Tools.Directories import SCOPE_PLUGINS, fileExists, resolveFilename, sanitizeFilename
+from Tools.Notifications import RemovePopup
+from Tools.NumericalTextInput import NumericalTextInput
+
+import Screens.InfoBar
+from Screens.ChoiceBox import ChoiceBox
+from Screens.EpgSelection import EPGSelection
+from Screens.EventView import EventViewEPGSelect
+from Screens.Hotkey import InfoBarHotkey, hotkey, hotkeyActionMap
 from Screens.InputBox import PinInput
-from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Screens.MessageBox import MessageBox
-from Screens.ServiceInfo import ServiceInfo
-from Screens.Hotkey import InfoBarHotkey, hotkeyActionMap, hotkey
-profile("ChannelSelection.py 4")
 from Screens.PictureInPicture import PictureInPicture
 from Screens.RdsDisplay import RassInteractive
-from ServiceReference import ServiceReference
-from Tools.BoundFunction import boundFunction
-from Tools.Notifications import RemovePopup
-from Tools.Alternatives import GetWithAlternative
-from Tools.Directories import fileExists, resolveFilename, sanitizeFilename, SCOPE_PLUGINS
-from Plugins.Plugin import PluginDescriptor
-from Components.PluginComponent import plugins
-from Screens.ChoiceBox import ChoiceBox
-from Screens.EventView import EventViewEPGSelect
-import os
-from time import time
-profile("ChannelSelection.py after imports")
+from Screens.Screen import Screen
+from Screens.ScreenSaver import InfoBarScreenSaver
+from Screens.ServiceInfo import ServiceInfo
+from Screens.VirtualKeyBoard import VirtualKeyBoard
 
 FLAG_SERVICE_NEW_FOUND = 64
 FLAG_IS_DEDICATED_3D = 128
@@ -116,7 +111,7 @@ def append_when_current_valid(current, menu, args, level=0, key="dummy"):
 
 
 def removed_userbouquets_available():
-	for file in os.listdir("/etc/enigma2/"):
+	for file in listdir("/etc/enigma2/"):
 		if file.startswith("userbouquet") and file.endswith(".del"):
 			return True
 	return False
@@ -411,19 +406,19 @@ class ChannelContextMenu(Screen):
 
 	def purgeDeletedBouquetsCallback(self, answer):
 		if answer:
-			for file in os.listdir("/etc/enigma2/"):
+			for file in listdir("/etc/enigma2/"):
 				if file.startswith("userbouquet") and file.endswith(".del"):
 					file = "/etc/enigma2/" + file
 					print("permantly remove file ", file)
-					os.remove(file)
+					remove(file)
 			self.close()
 
 	def restoreDeletedBouquets(self):
-		for file in os.listdir("/etc/enigma2/"):
+		for file in listdir("/etc/enigma2/"):
 			if file.startswith("userbouquet") and file.endswith(".del"):
 				file = "/etc/enigma2/" + file
 				print("restore file ", file[:-4])
-				os.rename(file, file[:-4])
+				rename(file, file[:-4])
 		eDVBDBInstance = eDVBDB.getInstance()
 		eDVBDBInstance.setLoadUnlinkedUserbouquets(True)
 		eDVBDBInstance.reloadBouquets()
@@ -1029,7 +1024,7 @@ class ChannelSelectionEdit:
 		mutableBouquetList = serviceHandler.list(self.bouquet_root).startEdit()
 		if mutableBouquetList:
 			name = sanitizeFilename(bName)
-			while os.path.isfile((self.mode == MODE_TV and '/etc/enigma2/userbouquet.%s.tv' or '/etc/enigma2/userbouquet.%s.radio') % name):
+			while isfile((self.mode == MODE_TV and '/etc/enigma2/userbouquet.%s.tv' or '/etc/enigma2/userbouquet.%s.radio') % name):
 				name = name.rsplit('_', 1)
 				name = ('_').join((name[0], len(name) == 2 and name[1].isdigit() and str(int(name[1]) + 1) or '1'))
 			new_bouquet_ref = eServiceReference((self.mode == MODE_TV and '1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "userbouquet.%s.tv" ORDER BY bouquet' or '1:7:2:0:0:0:0:0:0:0:FROM BOUQUET "userbouquet.%s.radio" ORDER BY bouquet') % name)
@@ -1335,10 +1330,10 @@ service_types_radio = '1:7:2:0:0:0:0:0:0:0:(type == 2) || (type == 10)'
 class ChannelSelectionBase(Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
-		self["key_red"] = Button(_("All"))
-		self["key_green"] = Button(_("Satellites"))
-		self["key_yellow"] = Button(_("Provider"))
-		self["key_blue"] = Button(_("Favourites"))
+		self["key_red"] = StaticText(_("All"))
+		self["key_green"] = StaticText(_("Satellites"))
+		self["key_yellow"] = StaticText(_("Provider"))
+		self["key_blue"] = StaticText(_("Favourites"))
 
 		self["list"] = ServiceList(self)
 		self.servicelist = self["list"]
