@@ -583,9 +583,8 @@ from Components.NetworkTime import ntpSyncPoller
 ntpSyncPoller.startTimer()
 
 profile("Keymap")
-from Components.ActionMap import loadKeymap #, readKeymap
+from Components.ActionMap import loadKeymap
 loadKeymap(config.usage.keymap.value)
-#readKeymap(config.usage.keytrans.value) # not needed anymore!
 
 profile("Network")
 from Components.Network import InitNetwork
