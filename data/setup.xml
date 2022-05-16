@@ -28,7 +28,7 @@
 	<setup key="DNS" title="DNS Settings">
 		<item level="0" text="DNS data source" description="Select the source of the default DNS settings.">config.usage.dns</item>
 	</setup>
-	<setup key="epgsettings" title="EPG settings">
+	<setup key="EPG" title="EPG Settings">
 		<item level="2" text="Show EIT now/next in infobar" description="When enabled, display the EIT now/next eventdata in infobar. When disabled, display now/next eventdata from the EPG cache instead.">config.usage.show_eit_nownext</item>
 		<item level="0" text="Enable EIT EPG" description="Use EIT EPG information when it is available.">config.epg.eit</item>
 		<item level="2" text="Enable MHW EPG" description="Use MHW EPG information when it is available.">config.epg.mhw</item>
@@ -57,7 +57,7 @@
 			<item level="0" text="Remove all other data" description="Select 'Yes' to remove all other files and directories not covered by the options above." conditional="len(self.others)">config.factory.resetOthers</item>
 		</if>
 	</setup>
-	<setup key="general" title="General" menuTitle="General">
+	<setup key="General" title="General Settings">
 		<item level="1" text="12V output" description="12V output" requires="12V_Output.">config.usage.output_12V</item>
 		<item level="1" text="Alternative services tuner priority" description="Configure which tuner type will be preferred when the same service is available on different types of tuners. Choose 'no priority' to try each alternative one by one regardless of the tuner type.">config.usage.alternatives_priority</item>
 		<item level="1" text="Preferred tuner" description="Configure which tuner will be preferred, when more than one tuner is available. If set to 'auto' the system will give priority to the tuner having the lowest number of channels/satellites.">config.usage.frontend_priority</item>
@@ -88,14 +88,14 @@
 		<item level="2" text="Alternative URL for images listed on FlashImage" description="Enter an URL where alternative images could be listed for FlashImage" requires="canFlashWithOfgwrite">config.usage.alternative_imagefeed</item>
 		<item level="1" text="Position of completed timers in timerlist" description="Configure where completed timers show up in the timer list.">config.usage.timerlist_finished_timer_position</item>
 	</setup>
-	<setup key="harddisk" title="Hard disk setup">
+	<setup key="Harddisk" title="Hard disk setup">
 		<item level="0" text="Hard disk standby after" description="Configure the hard disk drive to go to standby after the specified idle time.">config.usage.hdd_standby</item>
 	</setup>
 	<setup key="InputDevices" title="Keyboard &amp; Remote Control Setup">
 		<item level="0" text="Keyboard map" description="Keyboard mapping file to be used for keyboard input.">config.inputDevices.keyboardMap</item>
 		<item level="0" text="Select remote control" description="Select the remote control device to be used with your receiver.">config.inputDevices.remotesIndex</item>
 	</setup>
-	<setup key="lcd" title="Front Panel Display setup" requires="FrontpanelDisplay">
+	<setup key="FrontPanel" title="Front Panel Display setup" requires="FrontpanelDisplay">
 		<item level="0" text="Clone TV screen to LCD" description="Shows live tv or informations on LCD." requires="LcdLiveTV">config.lcd.showTv</item>
 		<item level="0" text="Clone TV screen to LCD mode" description="Selects the mode how live tv should be shown on the LCD." requires="LcdLiveTVMode">config.usage.LcdLiveTVMode</item>
 		<item level="2" text="Live decoder" description="Selects video source displayed on the LCD." requires="LcdLiveDecoder">config.usage.LcdLiveDecoder</item>
@@ -119,11 +119,18 @@
 		<item level="2" text="Show symbols on display" description="This option allows you to show all symbols on the display." requires="LCDshow_symbols">config.usage.lcd_show_symbols</item>
 		<item level="2" text="Use 12 characters display mode" description="If enabled, display shows 12 chars instead 8, but in latin-1/translit only." requires="hasXcoreVFD">config.usage.toggle12to8characterVFD</item>
 	</setup>
-	<setup key="Locale" title="Locale Selection Setup" menuTitle="Locale">
+	<setup key="Locale" title="Locale Selection">
 		<item level="0" text="Locales to be displayed" description="Display the base locales or all locales for a language.">config.locales.packageLocales</item>
 		<item level="0" text="Locale list sort order" description="Sort order for the language list.">config.locales.localesSortBy</item>
 	</setup>
-	<setup key="network" title="Network setup">
+	<setup key="Logs" title="Logs Setup">
+		<item level="2" text="Debug logging *" description="Use this option to select if debug logs of internal enigma2 activities are created and, if so, how much detail will be logged. These logs can be helpful for developers in finding and fixing problems.">config.crash.debugLevel</item>
+		<item level="2" text="Include keyboard data" description="Enable this option to add keyboard keymap data to the debug log file.">config.crash.debugKeyboards</item>
+		<item level="2" text="Include remote control data" description="Enable this option to add remote control data to the debug log file.">config.crash.debugRemoteControls</item>
+		<item level="2" text="Include action map data" description="Enable this option to add action map / remote control mapping data to the debug log file.">config.crash.debugActionMaps</item>
+		<item level="2" text="Include screen load data" description="Enable this option to add screen names and resolution data to the debug log file.">config.crash.debugScreens</item>
+	</setup>
+	<setup key="Network" title="Network Setup">
 		<item text="Use DHCP" description="When enabled, use DHCP for the IP configuration.">config.network.dhcp</item>
 		<item text="IP address" description="Configure the IP address.">config.network.ip</item>
 		<item text="Netmask" description="Configure the netmask.">config.network.netmask</item>
@@ -131,7 +138,7 @@
 		<item text="Nameserver" description="Configure the nameserver (DNS).">config.network.dns</item>
 		<item text="Activate network settings" description="Activate the configured network settings.">config.network.activate</item>
 	</setup>
-	<setup key="osd" title="OSD settings">
+	<setup key="OSD" title="OSD Settings">
 		<item text="Alpha">config.osd.alpha</item>
 		<item text="Brightness">config.osd.bright</item>
 		<item text="Contrast">config.osd.contrast</item>
@@ -139,7 +146,7 @@
 	<setup key="Password" title="Password Setup">
 		<item level="0" text="New password" description="Setting a password is strongly advised if your STB is open to the Internet. You must set a password in order to be able to use network services like FTP, Telnet or SSH.">config.network.password</item>
 	</setup>
-	<setup key="Playback" title="Playback">
+	<setup key="Playback" title="Playback Settings">
 		<item level="2" text="Show movie lengths in movielist" description="When enabled, the lenght of each recording will be shown in the movielist (this might cause some additional loading time).">config.usage.load_length_of_movies_in_moviellist</item>
 		<item level="2" text="Show status icons in movielist" description="Configure the type of status indication icons shown in the movielist.">config.usage.show_icons_in_movielist</item>
 		<item level="2" text="Allow quitting movie player with exit" description="When enabled, it is possible to leave the movie player with exit.">config.usage.leave_movieplayer_onExit</item>
@@ -161,7 +168,7 @@
 		<item level="2" text="Background delete option" description="Configure on which devices the background delete option should be used.">config.misc.erase_flags</item>
 		<item level="2" text="Background delete speed" description="Configure the speed of the background deletion process. Lower speed will consume less hard disk drive performance.">config.misc.erase_speed</item>
 	</setup>
-	<setup key="Recording" title="Recording">
+	<setup key="Recording" title="Recording Settings">
 		<item level="0" text="Default movie location" description="Set the default location for your recordings. Press OK to add new locations, LEFT/RIGHT to select from any existing locations.">config.usage.default_path</item>
 		<item level="2" text="Timer recording location" description="Set the default location for your timers. Press OK to add new locations, LEFT/RIGHT to select from any existing locations.">config.usage.timer_path</item>
 		<item level="2" text="Instant recording location" description="Set the default location for your instant recordings. Press OK to add new locations, LEFT/RIGHT to select from any existing locations.">config.usage.instantrec_path</item>
@@ -187,7 +194,7 @@
 		<item level="1" text="Channel">config.rfmod.channel</item>
 		<item level="1" text="Finetune">config.rfmod.finetune</item>
 	</setup>
-	<setup key="satconfig" title="Satellite dish setup">
+	<setup key="SatConfig" title="Satellite dish setup">
 		<item text="Tuner slot" description="Choose which tuner to configure.">config.sat.tunerslot</item>
 		<item text="Configuration mode" description="Configure the tuner mode.">config.sat.configmode</item>
 		<item text="DiSEqC" description="Configure the DiSEqC mode for this LNB.">config.sat.diseqc</item>
@@ -209,7 +216,7 @@
 		<item level="0" text="Restart" description="Reset the selected devices and save changes of your config when the GREEN button is pressed.">config.misc.restarts</item>
 		<item level="2" text="Show softcam setup in extensions menu" description="This option allows you to add the softcam setup in the extensions menu." requires="HasSoftcamInstalled">config.misc.softcam_setup.extension_menu</item>
 	</setup>
-	<setup key="Subtitle" title="Subtitle Setup">
+	<setup key="Subtitle" title="Subtitle Settings">
 		<item level="0" text="Teletext subtitle color" description="Configure the color of the teletext subtitles.">config.subtitles.ttx_subtitle_colors</item>
 		<item level="2" text="Use original teletext position" description="When enabled, teletext subtitles will be displayed at their original position.">config.subtitles.ttx_subtitle_original_position</item>
 		<item level="2" text="Rewrap subtitles" description="When enabled, reformat subtitles to match the width of the screen.">config.subtitles.subtitle_rewrap</item>
@@ -231,13 +238,13 @@
 		<item level="2" text="Set fps for external subtitles" description="Can be used for different fps between external subtitles and video.">config.subtitles.pango_subtitles_fps</item>
 		<item level="2" text="Automatically turn on external subtitles" description="When enabled, external subtitles will be always turned on for playback movie.">config.subtitles.pango_autoturnon</item>
 	</setup>
-	<setup key="Time" title="Time and Date" menuTitle="Time and Date">
+	<setup key="Time" title="Time and Date">
 		<item level="0" text="Time zone area" description="Select your time zone area or region.">config.timezone.area</item>
 		<item level="0" text="Time zone" description="Select the time zone within the area or region.">config.timezone.val</item>
-		<item level="0" text="Date style" description="Choose the display formatting style for dates. 'D' / 'DD' is the date and 'M' / 'MM' is the month in digits.  ('DD' and 'MM' have leading zeros for single digit values.) The screen display will be based on your choice but can be influenced by the skin." requires="config.usage.date.enabled">config.usage.date.dayfull</item>
-		<item level="0" text="Time style" description="Choose the display formatting style for times. 'H' / 'HH' is the hour for a 24 hour clock, 'h' / 'hh' is the hour for a 12 hour clock, 'mm' is the minutes and 'ss' is the seconds.  ('HH' and 'hh' have leading zeros for single digit values.) The screen display will be based on your choice but can be influenced by the skin." requires="config.usage.time.enabled">config.usage.time.long</item>
+		<item level="0" text="Date style" description="Choose the display formatting style for dates. 'D' / 'DD' is the date and 'M' / 'MM' is the month in digits. 'DD' and 'MM' have leading zeros for single digit values. The screen display will be based on your choice but can be influenced by the skin." requires="config.usage.date.enabled">config.usage.date.dayfull</item>
+		<item level="0" text="Time style" description="Choose the display formatting style for times. 'H' / 'HH' is the hour for a 24 hour clock, 'h' / 'hh' is the hour for a 12 hour clock, 'mm' is the minutes and 'ss' is the seconds. 'HH' and 'hh' have leading zeros for single digit values. The screen display will be based on your choice but can be influenced by the skin." requires="config.usage.time.enabled">config.usage.time.long</item>
 		<item level="0" text="Time synchronisation method" description="Select how you want your receiver to keep the correct time, either from the DVB transponder, or from the internet using NTP. Or use Auto, which will favour using NTP, but will fall back to transponder time when no internet connection is available.">config.time.syncMethod</item>
-		<if conditional="config.time.syncMethod.value != 'dvb'">
+		<if conditional="config.time.syncMethod.value == 'ntp'">
 			<item level="0" text="NTP Hostname" description="The hostname or the IP address of the NTP server to synchronise the time with.">config.time.ntpServer</item>
 			<item level="0" text="Sync interval" description="Set how often the NTP server will be contacted to synchronise the time.">config.time.syncInterval</item>
 		</if>
@@ -247,7 +254,7 @@
 		<item level="1" text="Automatically start timeshift after" description="When enabled, timeshift starts automatically in background after the specified time.">config.usage.timeshift_start_delay</item>
 		<item level="1" text="Show warning when timeshift is stopped" description="When enabled, a warning will be displayed and the user will get an option to stop or to continue the timeshift.">config.usage.check_timeshift</item>
 	</setup>
-	<setup key="userinterface" title="User Interface" menuTitle="User Interface">
+	<setup key="UserInterface" title="User Interface">
 		<item level="1" text="Sort order for menu entries" description="This option allows you to hide and sort menu entries. When selecting user you can change order and hide menu items via the blue button. With the user defined hidden the blue button is not shown in the menus">config.usage.menu_sort_mode</item>
 		<item level="1" text="Sort order for setup entries" description="This option allows you to alphabetically sort setup menu entries.">config.usage.sort_settings</item>
 		<item level="1" text="Show setup default value" description="This option allows you to select if the default value for a setup item is shown and, if so, where it is displayed in relation to the description.">config.usage.setupShowDefault</item>
@@ -265,13 +272,13 @@
 		<item level="0" text="Enable Dolby Digital / Dolby AC-3 offsets" description="Select 'Yes' if volume adjustments should be applied to Dolby sound tracks.">config.volume.dolbyEnabled</item>
 		<item level="0" text="Default Dolby Digital / Dolby AC-3 offset" description="This offset will only be used if the channel does not have its own volume offset.">config.volume.dolbyOffset</item>
 	</setup>
-	<setup key="wizardsetup" title="Wizard setup">
+	<setup key="Wizard" title="Wizard setup">
 		<item level="0" text="Setup mode" description="Configure which access level to use for the configuration menu. Expert level gives access to all items.">config.usage.setup_level</item>
 		<item level="0" text="Alternative numbering mode" description="When enabled, channel numbering will start at '1' for each bouquet.">config.usage.alternative_number_mode</item>
 		<item level="0" text="Show picons in channel selection list" description="Configure if service picons will be shown in the channel selection list.">config.usage.service_icon_enable</item>
 		<item level="0" text="Enable HDMI-CEC" description="When enabled, HDMI-CEC is enabled with standard configuration" requires="HasHDMI-CEC">config.hdmicec.enabled</item>
 	</setup>
-	<setup key="zapping" title="Zapping">
+	<setup key="Zapping" title="Zapping Settings">
 		<item level="1" text="Enable multiple bouquets" description="When enabled, services may be grouped in multiple bouquets.">config.usage.multibouquet</item>
 		<item level="1" text="Multi-EPG bouquet selection" description="Enable bouquet selection in multi-EPG">config.usage.multiepg_ask_bouquet</item>
 		<item level="0" text="Alternative numbering mode" description="When enabled, channel numbering will start at '1' for each bouquet.">config.usage.alternative_number_mode</item>

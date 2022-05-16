@@ -36,15 +36,15 @@
 
 		<menu entryID="rec_setup" level="1" text="Playback, Recording &amp; Timeshift" weight="45">
 			<id val="rec" />
-			<item entryID="movieselection_setup" level="0" text="Movie Selection Setup" weight="5"><setup id="MovieSelection" /></item>
-			<item entryID="playback_setup" level="0" text="Playback" weight="10"><setup id="Playback" /></item>
-			<item entryID="recording_setup" level="0" text="Recording" weight="15"><screen module="Recording" screen="RecordingSettings" /></item>
-			<item entryID="timeshift_setup" level="0" text="Timeshift" weight="20"><screen module="Timeshift" screen="TimeshiftSettings" /></item>
+			<item level="0" entryID="movieselection_setup" text="Movie Selection Setup" weight="5"><setup id="MovieSelection" /></item>
+			<item level="0" entryID="playback_setup" text="Playback" weight="10"><setup id="Playback" /></item>
+			<item level="0" entryID="recording_setup" text="Recording" weight="15"><screen module="Recording" screen="RecordingSettings" /></item>
+			<item level="0" entryID="timeshift_setup" text="Timeshift" weight="20"><screen module="Timeshift" screen="TimeshiftSettings" /></item>
 		</menu>
 
 		<item level="0" entryID="general_settings"><setup id="general" /></item>
 
-		<menu weight="20" level="0" text="Tuning" entryID="tuning">
+		<menu weight="20" level="0" text="Reception" entryID="reception">
 			<id val="scan" />
 			<item text="Tuner configuration" entryID="tuner_setup" conditional="nimmanager.nim_slots"><screen module="Satconfig" screen="NimSelection" /></item>
 			<item text="Automatic scan" entryID="auto_scan" conditional="nimmanager.somethingConnected()"><screen module="ScanSetup" screen="ScanSimple" /></item>
@@ -56,9 +56,9 @@
 			<id val="system" />
 			<menu level="0" text="Audio / Video" entryID="video_selection">
 				<id val="video" />
-				<item entryID="av_setup" level="0" text="Audio/Video Setup" weight="5"><setup id="AudioVideo" /></item>
-				<item entryID="volume_adjust" level="0" text="Volume Adjust" weight="10"><screen module="VolumeAdjust" screen="VolumeAdjust" /></item>
-				<item level="2" entryID="subtitle_setup"><setup id="subtitlesetup" /></item>
+				<item weight="10" level="0" entryID="av_setup" text="Audio / Video"><setup id="AudioVideo" /></item>
+				<item weight="20" level="0" entryID="volume_adjust" text="Volume Adjust"><screen module="VolumeAdjust" screen="VolumeAdjust" /></item>
+				<item weight="30" level="0" entryID="subtitle_setup" text="Subtitles"><setup id="Subtitle" /></item>
 			</menu>
 			<item level="0" entryID="user_interface"><setup id="userinterface" /></item>
 			<menu level="0" text="Theme" entryID="theme_settings">
@@ -68,7 +68,7 @@
 			</menu>
 
 			<item weight="20" level="0" text="Time" entryID="time_setup"><screen module="Time" screen="Time" /></item>
-			<item weight="30" level="0" text="Locale/Language" entryID="locale_setup"><screen module="LocaleSelection" /></item>
+			<item weight="30" level="0" text="Locale" entryID="locale_setup"><screen module="LocaleSelection" /></item>
 			<item weight="40" level="0" text="Network" entryID="network_setup"><screen module="NetworkSetup" screen="NetworkAdapterSelection" /></item>
 
 			<menu weight="50" level="0" text="Software" entryID="software_setup">
