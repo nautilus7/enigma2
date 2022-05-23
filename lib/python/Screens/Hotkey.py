@@ -200,7 +200,7 @@ def getHotkeyFunctions():
 	hotkey.functions.append((_("HotKey Setup"), "Module/Screens.Hotkey/HotkeySetup", "Setup"))
 	hotkey.functions.append((_("Software update"), "Module/Screens.SoftwareUpdate/SoftwareUpdate", "Setup"))
 	hotkey.functions.append((_("Latest Commits"), "Module/Screens.About/CommitInfo", "Setup"))
-	hotkey.functions.append((_("CI (Common Interface) Setup"), "Module/Screens.Ci/CiSelection", "Setup"))
+	hotkey.functions.append((_("CI (Common Interface) Setup"), "Module/Screens.CommonInterface/CiSelection", "Setup"))
 	hotkey.functions.append((_("Tuner Configuration"), "Module/Screens.Satconfig/NimSelection", "Scanning"))
 	hotkey.functions.append((_("Manual Scan"), "Module/Screens.ScanSetup/ScanSetup", "Scanning"))
 	hotkey.functions.append((_("Automatic Scan"), "Module/Screens.ScanSetup/ScanSimple", "Scanning"))

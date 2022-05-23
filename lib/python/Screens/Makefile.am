@@ -7,7 +7,7 @@ install_PYTHON = \
 	AutoDiseqc.py \
 	ChannelSelection.py \
 	ChoiceBox.py \
-	Ci.py \
+	CommonInterface.py \
 	Console.py \
 	Dish.py \
 	DVD.py \

@@ -1,4 +1,4 @@
-from Screens.Ci import MMIDialog
+from Screens.CommonInterface import MMIDialog
 from . import socketmmi
 
 

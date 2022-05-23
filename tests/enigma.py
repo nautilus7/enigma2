@@ -381,5 +381,5 @@ def init_all():
 	import Components.RFmod
 	Components.RFmod.InitRFmod()
 
-	import Screens.Ci
-	Screens.Ci.InitCiConfig()
+	import Screens.CommonInterface
+	Screens.CommonInterface.InitCiConfig()

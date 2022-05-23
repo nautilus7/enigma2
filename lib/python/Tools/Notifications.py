@@ -69,8 +69,8 @@ def AddPopup(text, type, timeout, id=None):
 def removeCIdialog():
 	import NavigationInstance
 	if NavigationInstance.instance and NavigationInstance.instance.wasTimerWakeup():
-		import Screens.Ci
-		for slot in Screens.Ci.CiHandler.dlgs:
-			if hasattr(Screens.Ci.CiHandler.dlgs[slot], "forceExit"):
-				Screens.Ci.CiHandler.dlgs[slot].tag = "WAIT"
-				Screens.Ci.CiHandler.dlgs[slot].forceExit()
+		import Screens.CommonInterface
+		for slot in Screens.CommonInterface.CiHandler.dlgs:
+			if hasattr(Screens.CommonInterface.CiHandler.dlgs[slot], "forceExit"):
+				Screens.CommonInterface.CiHandler.dlgs[slot].tag = "WAIT"
+				Screens.CommonInterface.CiHandler.dlgs[slot].forceExit()

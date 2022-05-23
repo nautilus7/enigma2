@@ -600,7 +600,7 @@ from Components.RFmod import InitRFmod
 InitRFmod()
 
 profile("CommonInterface")
-from Screens.Ci import CiHandler, InitCiConfig
+from Screens.CommonInterface import CiHandler, InitCiConfig
 InitCiConfig()
 
 # from enigma import dump_malloc_stats
