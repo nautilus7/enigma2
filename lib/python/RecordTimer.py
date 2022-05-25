@@ -1,57 +1,66 @@
-import os
-from enigma import eEPGCache, getBestPlayableServiceReference, eStreamServer, eServiceReference, iRecordableService, quitMainloop, eActionMap, setPreferredTuner
+from bisect import insort
+from os import fsync, makedirs, remove, rename
+from os.path import exists, isdir, realpath
+from sys import maxsize
+from threading import Lock
+from time import ctime, localtime, strftime, time
 
+from enigma import eActionMap, eEPGCache, eServiceReference, eStreamServer, getBestPlayableServiceReference, iRecordableService, quitMainloop, setPreferredTuner
+
+import Components.ParentalControl
+import NavigationInstance
+import Screens.InfoBar
+import Screens.Standby
 from Components.config import config
-from Components.UsageConfig import defaultMoviePath
+from Components.Harddisk import findMountPoint
 from Components.SystemInfo import SystemInfo
 from Components.TimerSanityCheck import TimerSanityCheck
-
+from Components.UsageConfig import defaultMoviePath
 from Screens.MessageBox import MessageBox
 from Screens.PictureInPicture import PictureInPicture
-import Screens.Standby
-import Screens.InfoBar
-import Components.ParentalControl
+from ServiceReference import ServiceReference, isPlayableForCur
+from timer import Timer, TimerEntry
 from Tools.Alternatives import ResolveCiAlternative
 from Tools.ASCIItranslit import legacyEncode
 from Tools.CIHelper import cihelper
-from Tools.Directories import SCOPE_CONFIG, getRecordingFilename, resolveFilename
+from Tools.Directories import SCOPE_CONFIG, fileReadXML, getRecordingFilename, resolveFilename
 from Tools.Notifications import AddNotification, AddNotificationWithCallback, AddPopup
+from Tools.Trashcan import TrashcanInstance
 from Tools.XMLTools import stringToXML
-from Tools.Trashcan import instance as trashcan_instance
 
-import timer
-import xml.etree.ElementTree
-import NavigationInstance
-from ServiceReference import ServiceReference, isPlayableForCur
+MODULE_NAME = __name__.split(".")[-1]
 
-from time import localtime, strftime, ctime, time
-from bisect import insort
-from sys import maxsize
-
-# ok, for descriptions etc we have:
+# For descriptions etc we have:
 # service reference  (to get the service name)
 # name               (title)
 # description        (description)
 # event data         (ONLY for time adjustments etc.)
 
+# We need to handle concurrency when updating timers.xml and
+# when checking was_rectimer_wakeup
+#
+writeLock = Lock()
+wasrecLock = Lock()
 
-# parses an event, and gives out a (begin, end, name, duration, eit)-tuple.
-# begin and end will be corrected
-def parseEvent(ev, description=True):
+
+# Parses an event, and gives out a (begin, end, name, duration, eit)-tuple.
+# The begin and end will be corrected to include margin padding.
+#
+def parseEvent(event, description=True):
 	if description:
-		name = ev.getEventName()
-		description = ev.getShortDescription()
+		name = event.getEventName()
+		description = event.getShortDescription()
 		if description == "":
-			description = ev.getExtendedDescription()
+			description = event.getExtendedDescription()
 	else:
 		name = ""
 		description = ""
-	begin = ev.getBeginTime()
-	end = begin + ev.getDuration()
-	eit = ev.getEventId()
+	begin = event.getBeginTime()
+	end = begin + event.getDuration()
+	eit = event.getEventId()
 	begin -= config.recording.margin_before.value * 60
 	end += config.recording.margin_after.value * 60
-	return (begin, end, name, description, eit)
+	return (begin, end, name, description, eit)  # We should also report the margins!
 
 
 class AFTEREVENT:
@@ -64,19 +73,81 @@ class AFTEREVENT:
 def findSafeRecordPath(dirname):
 	if not dirname:
 		return None
-	from Components import Harddisk
-	dirname = os.path.realpath(dirname)
-	mountpoint = Harddisk.findMountPoint(dirname)
-	if mountpoint in ('/', '/media'):
-		print('[RecordTimer] media is not mounted:', dirname)
+	dirname = realpath(dirname)
+	mountPoint = findMountPoint(dirname)
+	if mountPoint in ("/", "/media"):
+		print("[RecordTimer] Media is not mounted for '%s'." % dirname)
 		return None
-	if not os.path.isdir(dirname):
+	if not isdir(dirname):
 		try:
-			os.makedirs(dirname)
-		except Exception as ex:
-			print('[RecordTimer] Failed to create dir "%s":' % dirname, ex)
+			makedirs(dirname)
+		except (IOError, OSError) as err:
+			print("[RecordTimer] Error %d: Failed to create dir '%s'!  (%s)" % (err.errno, dirname, err.strerror))
 			return None
 	return dirname
+
+
+# This code is for use by hardware with a stb device file which, when
+# non-zero, can display a visual indication on the front-panel that
+# recordings are in progress, with possibly different icons for
+# different numbers of concurrent recordings.
+# NOTE that Navigation.py uses symbol_signal (which the mbtwin does not
+# have) to indicate that a recording is being played back. Different.
+#
+# Define the list of boxes which can use the code by setting the device
+# path and number of different states it supports.
+# Any undefined box will not use this code.
+#
+SID_symbol_states = {
+	"mbtwin": ("/proc/stb/lcd/symbol_circle", 4)
+}
+
+SID_code_states = SID_symbol_states.setdefault(SystemInfo["model"], (None, 0))
+
+n_recordings = 0  # Must be zero when we start running.
+# Also use in Tools/Trashcan.py
+
+
+def SetIconDisplay(nrec):
+	if SID_code_states[0] == None:  # Not the code for us
+		return
+	(wdev, max_states) = SID_code_states
+	if nrec == 0:                   # An absolute setting - clear it...
+		open(wdev, "w").write("0")
+		return
+	sym = nrec
+	if sym > max_states:
+		sym = max_states
+	if sym < 0:      # Sanity check - just in case...
+		sym = 0
+	open(wdev, "w").write(str(sym))
+	return
+
+
+# Define a function that is called at the start and stop of all
+# recordings. This allows us to track the number of actual recordings.
+# Other recording-related accounting could also be added here.
+# alter is 1 at a recording start, -1 at a stop and 0 as enigma2 starts
+# (to initialize things).
+#
+def RecordingsState(alter):
+	global n_recordings  # Since we are about to modify it we need to declare it as global.
+	if not -1 <= alter <= 1:
+		return
+	# Adjust the number of currently running recordings...
+	if alter == 0:  # Initialize.
+		n_recordings = 0
+	else:
+		n_recordings += alter
+	if n_recordings < 0:  # Sanity check - just in case.
+		n_recordings = 0
+	SetIconDisplay(n_recordings)
+	return
+
+
+RecordingsState(0)  # Initialize active recordings to zero.
+
+wasRecTimerWakeup = False
 
 
 def checkForRecordings():
@@ -93,9 +164,10 @@ def createRecordTimerEntry(timer):
 		zap_wakeup=timer.zap_wakeup, rename_repeat=timer.rename_repeat, conflict_detection=timer.conflict_detection,
 		pipzap=timer.pipzap)
 
-# please do not translate log messages
-class RecordTimerEntry(timer.TimerEntry):
-######### the following static methods and members are only in use when the box is in (soft) standby
+
+class RecordTimerEntry(TimerEntry):
+	# The following static methods and members are only in use when the box is in (soft) standby!
+	#
 	wasInStandby = False
 	wasInDeepStandby = False
 	receiveRecordEvents = False
@@ -105,18 +177,18 @@ class RecordTimerEntry(timer.TimerEntry):
 		if flag and (RecordTimerEntry.wasInStandby or RecordTimerEntry.wasInDeepStandby):
 			RecordTimerEntry.wasInStandby = False
 			RecordTimerEntry.wasInDeepStandby = False
-			eActionMap.getInstance().unbindAction('', RecordTimerEntry.keypress)
+			eActionMap.getInstance().unbindAction("", RecordTimerEntry.keypress)
 
 	@staticmethod
 	def setWasInDeepStandby():
 		RecordTimerEntry.wasInDeepStandby = True
-		eActionMap.getInstance().bindAction('', -maxsize - 1, RecordTimerEntry.keypress)
+		eActionMap.getInstance().bindAction("", -maxsize - 1, RecordTimerEntry.keypress)
 
 	@staticmethod
 	def setWasInStandby():
 		if not RecordTimerEntry.wasInStandby:
 			if not RecordTimerEntry.wasInDeepStandby:
-				eActionMap.getInstance().bindAction('', -maxsize - 1, RecordTimerEntry.keypress)
+				eActionMap.getInstance().bindAction("", -maxsize - 1, RecordTimerEntry.keypress)
 			RecordTimerEntry.wasInDeepStandby = False
 			RecordTimerEntry.wasInStandby = True
 
@@ -127,42 +199,40 @@ class RecordTimerEntry(timer.TimerEntry):
 	@staticmethod
 	def staticGotRecordEvent(recservice, event):
 		if event == iRecordableService.evEnd:
-			print("RecordTimer.staticGotRecordEvent(iRecordableService.evEnd)")
+			print("[RecordTimer] staticGotRecordEvent(iRecordableService.evEnd)")
 			if not checkForRecordings():
-				print("No recordings busy of sceduled within 6 minutes so shutdown")
-				RecordTimerEntry.shutdown() # immediate shutdown
+				print("[RecordTimer] No recordings busy of scheduled within 6 minutes of shutdown.")
+				RecordTimerEntry.shutdown()  # Immediate shutdown.
 		elif event == iRecordableService.evStart:
-			print("RecordTimer.staticGotRecordEvent(iRecordableService.evStart)")
+			print("[RecordTimer] staticGotRecordEvent(iRecordableService.evStart)")
 
 	@staticmethod
 	def stopTryQuitMainloop():
-		print("RecordTimer.stopTryQuitMainloop")
+		print("[RecordTimer] stopTryQuitMainloop")
 		NavigationInstance.instance.record_event.remove(RecordTimerEntry.staticGotRecordEvent)
 		RecordTimerEntry.receiveRecordEvents = False
 
 	@staticmethod
 	def TryQuitMainloop():
 		if not RecordTimerEntry.receiveRecordEvents and Screens.Standby.inStandby:
-			print("RecordTimer.TryQuitMainloop")
+			print("[RecordTimer] TryQuitMainloop")
 			NavigationInstance.instance.record_event.append(RecordTimerEntry.staticGotRecordEvent)
 			RecordTimerEntry.receiveRecordEvents = True
-			# send fake event.. to check if another recordings are running or
-			# other timers start in a few seconds
+			# Send fake event to check if other recordings are running or
+			# other timers start in a few seconds.
 			RecordTimerEntry.staticGotRecordEvent(None, iRecordableService.evEnd)
-#################################################################
 
-	def __init__(self, serviceref, begin, end, name, description, eit, disabled=False, justplay=False, afterEvent=AFTEREVENT.AUTO, checkOldTimers=False, dirname=None, tags=None, descramble=True, record_ecm=False, always_zap=False, zap_wakeup="always", rename_repeat=True, conflict_detection=True, pipzap=False):
-		timer.TimerEntry.__init__(self, int(begin), int(end))
+	# End of static methods and members that are only in use when the box is in (soft) standby!
 
+	def __init__(self, serviceref, begin, end, name, description, eit, disabled=False, justplay=False, afterEvent=AFTEREVENT.AUTO, checkOldTimers=False, dirname=None, tags=None, descramble=True, record_ecm=False, isAutoTimer=False, always_zap=False, zap_wakeup="always", rename_repeat=True, conflict_detection=True, pipzap=False):
+		TimerEntry.__init__(self, int(begin), int(end))
 		if checkOldTimers:
 			if self.begin < time() - 1209600:
 				self.begin = int(time())
-
 		if self.end < self.begin:
 			self.end = self.begin
-
-		assert isinstance(serviceref, ServiceReference)
-
+		if not isinstance(serviceref, ServiceReference):
+			raise AssertionError("invalid serviceref")
 		if serviceref and serviceref.isRecordable():
 			self.service_ref = serviceref
 		else:
@@ -184,7 +254,7 @@ class RecordTimerEntry(timer.TimerEntry):
 		self.dirname = dirname
 		self.dirnameHadToFallback = False
 		self.autoincrease = False
-		self.autoincreasetime = 3600 * 24 # 1 day
+		self.autoincreasetime = 3600 * 24  # 1 day.
 		self.tags = tags or []
 		self.descramble = descramble
 		self.record_ecm = record_ecm
@@ -196,7 +266,7 @@ class RecordTimerEntry(timer.TimerEntry):
 		if SystemInfo["DVB-T_priority_tuner_available"] or SystemInfo["DVB-C_priority_tuner_available"] or SystemInfo["DVB-S_priority_tuner_available"] or SystemInfo["ATSC_priority_tuner_available"]:
 			rec_ref = self.service_ref and self.service_ref.ref
 			str_service = rec_ref and rec_ref.toString()
-			if str_service and '%3a//' not in str_service and not str_service.rsplit(":", 1)[1].startswith("/"):
+			if str_service and "%3a//" not in str_service and not str_service.rsplit(":", 1)[1].startswith("/"):
 				type_service = rec_ref.getUnsignedData(4) >> 16
 				if type_service == 0xEEEE:
 					if SystemInfo["DVB-T_priority_tuner_available"] and config.usage.recording_frontend_priority_dvbt.value != "-2":
@@ -220,32 +290,32 @@ class RecordTimerEntry(timer.TimerEntry):
 		self.change_frontend = False
 		self.InfoBarInstance = Screens.InfoBar.InfoBar.instance
 		self.ts_dialog = None
+		self.isAutoTimer = isAutoTimer
 		self.log_entries = []
 		self.flags = set()
 		self.resetState()
 
 	def __repr__(self):
-		return "RecordTimerEntry(name=%s, begin=%s, serviceref=%s, justplay=%s)" % (self.name, ctime(self.begin), self.service_ref, self.justplay)
+		return "RecordTimerEntry(name=%s, begin=%s, serviceref=%s, justplay=%s, isAutoTimer=%s)" % (self.name, ctime(self.begin), self.service_ref, self.justplay, self.isAutoTimer)
 
 	def log(self, code, msg):
 		self.log_entries.append((int(time()), code, msg))
-		print("[TIMER]", msg)
+		print("[RecordTimer] Log message: '%s'." % msg)
 
 	def calculateFilename(self, name=None):
-		service_name = self.service_ref.getServiceName()
-		begin_date = strftime("%Y%m%d %H%M", localtime(self.begin))
+		serviceName = self.service_ref.getServiceName()
+		beginDate = strftime("%Y%m%d %H%M", localtime(self.begin))
 		name = name or self.name
-		filename = begin_date + " - " + service_name
+		filename = "%s - %s" % (beginDate, serviceName)
 		if name:
 			if config.recording.filename_composition.value == "event":
-				filename = name + ' - ' + begin_date + "_" + service_name
+				filename = "%s - %s_%s" % (name, beginDate, serviceName)
 			elif config.recording.filename_composition.value == "short":
-				filename = strftime("%Y%m%d", localtime(self.begin)) + " - " + name
+				filename = "%s - %s" % (strftime("%Y%m%d", localtime(self.begin)), name)
 			elif config.recording.filename_composition.value == "long":
-				filename += " - " + name + " - " + self.description
+				filename = "%s - %s - %s" % (filename, name, self.description)
 			else:
-				filename += " - " + name # standard
-
+				filename = "%s - %s" % (filename, name)  # Standard
 		if config.recording.ascii_filenames.value:
 			filename = legacyEncode(filename)
 		if not self.dirname:
@@ -257,9 +327,9 @@ class RecordTimerEntry(timer.TimerEntry):
 				self.dirnameHadToFallback = True
 		if not dirname:
 			return None
-		self.Filename = getRecordingFilename(filename, dirname)
-		self.log(0, "Filename calculated as: '%s'" % self.Filename)
-		return self.Filename
+		self.recordingFilename = getRecordingFilename(filename, dirname)
+		self.log(0, "Recording filename calculated as '%s'." % self.recordingFilename)
+		return self.recordingFilename
 
 	def tryPrepare(self):
 		if self.justplay:
@@ -273,7 +343,7 @@ class RecordTimerEntry(timer.TimerEntry):
 			if rec_ref and rec_ref.flags & eServiceReference.isGroup:
 				rec_ref = getBestPlayableServiceReference(rec_ref, eServiceReference())
 				if not rec_ref:
-					self.log(1, "'get best playable service for group... record' failed")
+					self.log(1, "The 'get best playable service for group... record' call failed!")
 					return False
 			if rec_ref and config.misc.use_ci_assignment.value and not (self.record_ecm and not self.descramble):
 				current_ref = NavigationInstance.instance.getCurrentlyPlayingServiceReference()
@@ -308,20 +378,17 @@ class RecordTimerEntry(timer.TimerEntry):
 						self.record_ecm = True
 						self.descramble = False
 					if start_zap:
-						self.log(1, "zapping in CI+ use")
+						self.log(1, "Zapping in CI+ used.")
 						self.failureCB(answer=True, ref=rec_ref)
 						AddNotification(MessageBox, _("In order to record a timer, the TV was switched to the recording service!\n"), type=MessageBox.TYPE_INFO, timeout=20)
-			self.log(1, "'record ref' %s" % rec_ref and rec_ref.toString())
+			self.log(1, "The 'record ref' is %s." % rec_ref and rec_ref.toString())
 			self.setRecordingPreferredTuner()
 			self.record_service = rec_ref and NavigationInstance.instance.recordService(rec_ref)
-
 			if not self.record_service:
-				self.log(1, "'record service' failed")
+				self.log(1, "The 'record service' call failed!")
 				self.setRecordingPreferredTuner(setdefault=True)
 				return False
-
 			self.rec_ref = rec_ref
-
 			name = self.name
 			description = self.description
 			if self.repeated:
@@ -349,19 +416,16 @@ class RecordTimerEntry(timer.TimerEntry):
 				event_id = self.eit
 				if event_id is None:
 					event_id = -1
-
-			prep_res = self.record_service.prepare(self.Filename + self.record_service.getFilenameExtension(), self.begin, self.end, event_id, name.replace("\n", " "), description.replace("\n", " "), ' '.join(self.tags), bool(self.descramble), bool(self.record_ecm))
+			prep_res = self.record_service.prepare(self.recordingFilename + self.record_service.getFilenameExtension(), self.begin, self.end, event_id, name.replace("\n", " "), description.replace("\n", " "), " ".join(self.tags), bool(self.descramble), bool(self.record_ecm))
 			if prep_res:
 				if prep_res == -255:
-					self.log(4, "failed to write meta information")
+					self.log(4, "Failed to write meta information!")
 				else:
-					self.log(2, "'prepare' failed: error %d" % prep_res)
-
-				# we must calc nur start time before stopRecordService call because in Screens/Standby.py TryQuitMainloop tries to get
-				# the next start time in evEnd event handler...
+					self.log(2, "The 'prepare' call failed with error %d!" % prep_res)
+				# We must calc our start time before stopRecordService call because in Screens/Standby.py
+				# TryQuitMainloop tries to get the next start time in evEnd event handler.
 				self.do_backoff()
 				self.start_prepare = time() + self.backoff
-
 				NavigationInstance.instance.stopRecordService(self.record_service)
 				self.record_service = None
 				self.rec_ref = None
@@ -376,28 +440,25 @@ class RecordTimerEntry(timer.TimerEntry):
 			self.backoff *= 2
 			if self.backoff > 100:
 				self.backoff = 100
-		self.log(10, "backoff: retry in %d seconds" % self.backoff)
+		self.log(10, "Backoff, retry in %d seconds." % self.backoff)
 
 	def sendactivesource(self):
 		if SystemInfo["HasHDMI-CEC"] and config.hdmicec.enabled.value and config.hdmicec.sourceactive_zaptimers.value:
 			import Components.HdmiCec
 			Components.HdmiCec.hdmi_cec.sendMessage(0, "sourceactive")
-			print("[TIMER] sourceactive was send")
+			print("[RecordTimer] Source active was sent.")
 
 	def activate(self):
 		next_state = self.state + 1
-		self.log(5, "activating state %d" % next_state)
-
+		self.log(5, "Activating state %d." % next_state)
 		if next_state == self.StatePrepared:
 			if self.always_zap:
 				if Screens.Standby.inStandby:
-					self.log(5, "wakeup and zap to recording service")
+					self.log(5, "Wakeup and zap to recording service.")
 					RecordTimerEntry.setWasInStandby()
-					#set service to zap after standby
-					Screens.Standby.inStandby.prev_running_service = self.service_ref.ref
+					Screens.Standby.inStandby.prev_running_service = self.service_ref.ref  # Set service to zap after standby.
 					Screens.Standby.inStandby.paused_service = None
-					#wakeup standby
-					Screens.Standby.inStandby.Power()
+					Screens.Standby.inStandby.Power()  # Wake up standby.
 				else:
 					self.sendactivesource()
 					if RecordTimerEntry.wasInDeepStandby:
@@ -411,27 +472,28 @@ class RecordTimerEntry(timer.TimerEntry):
 							AddNotification(MessageBox, _("In order to record a timer, the TV was switched to the recording service!\n"), type=MessageBox.TYPE_INFO, timeout=20)
 							self.setRecordingPreferredTuner()
 							self.failureCB(answer=True)
-							self.log(5, "zap to recording service")
-
+							self.log(5, "Zap to recording service.")
 			if self.tryPrepare():
-				self.log(6, "prepare ok, waiting for begin")
+				self.log(6, "Prepare okay, waiting for begin.")
 				# create file to "reserve" the filename
 				# because another recording at the same time on another service can try to record the same event
 				# i.e. cable / sat.. then the second recording needs an own extension... when we create the file
 				# here than calculateFilename is happy
 				if not self.justplay:
-					open(self.Filename + self.record_service.getFilenameExtension(), "w").close()
-					# Give the Trashcan a chance to clean up
+					open(self.recordingFilename + self.record_service.getFilenameExtension(), "w").close()
+					# Give the trashcan a chance to clean up
+					# Need try/except as trashcan may not exist
+					# for a missed recording started at boot-time.
 					try:
-						trashcan_instance.cleanIfIdle(self.Filename)
+						TrashcanInstance.cleanIfIdle(self.recordingFilename)
 					except Exception as e:
-						print("[TIMER] Failed to call Trashcan.instance.cleanIfIdle()")
-						print("[TIMER] Error:", e)
-				# fine. it worked, resources are allocated.
+						print("[RecordTimer] Failed to call trashcan.cleanIfIdle()!")
+						print("[RecordTimer] Error: %s" % str(e))
+				# Fine, it worked, resources are allocated.
 				self.next_activation = self.begin
 				self.backoff = 0
 				return True
-			self.log(7, "prepare failed")
+			self.log(7, "Prepare failed!")
 			if eStreamServer.getInstance().getConnectedClients():
 				eStreamServer.getInstance().stopStream()
 				return False
@@ -448,33 +510,40 @@ class RecordTimerEntry(timer.TimerEntry):
 						if self.ts_dialog is None:
 							self.openChoiceActionBeforeZap()
 					elif not config.recording.asktozap.value:
-						self.log(8, "asking user to zap away")
+						self.log(8, "Asking user to zap away.")
 						AddNotificationWithCallback(self.failureCB, MessageBox, _("A timer failed to record!\nDisable TV and try again?\n"), timeout=20, default=True)
-					else: # zap without asking
-						self.log(9, "zap without asking")
+					else:  # Zap without asking.
+						self.log(9, "Zap without asking.")
 						AddNotification(MessageBox, _("In order to record a timer, the TV was switched to the recording service!\n"), type=MessageBox.TYPE_INFO, timeout=20)
 						self.setRecordingPreferredTuner()
 						self.failureCB(answer=True)
 				elif cur_ref:
-					self.log(8, "currently running service is not a live service.. so stop it makes no sense")
+					self.log(8, "Currently running service is not a live service so stopping it makes no sense.")
 				else:
-					self.log(8, "currently no service running... so we dont need to stop it")
+					self.log(8, "Currently no service running so we dont need to stop it.")
 			return False
 
 		elif next_state == self.StateRunning:
-			# if this timer has been cancelled, just go to "end" state.
+			global wasRecTimerWakeup
+			# Run this under a lock.
+			# We've seen two threads arrive here "together".
+			# Both see the file as existing, but only one can delete it...
+			with wasrecLock:
+				if exists("/tmp/was_rectimer_wakeup") and not wasRecTimerWakeup:
+					wasRecTimerWakeup = int(open("/tmp/was_rectimer_wakeup", "r").read()) and True or False
+					remove("/tmp/was_rectimer_wakeup")
+			self.autostate = Screens.Standby.inStandby
+			# If this timer has been cancelled, just go to "end" state.
 			if self.cancelled:
 				return True
 			if self.justplay:
 				if Screens.Standby.inStandby:
 					if RecordTimerEntry.wasInDeepStandby and self.zap_wakeup in ("always", "from_deep_standby") or self.zap_wakeup in ("always", "from_standby"):
-						self.log(11, "wakeup and zap")
+						self.log(11, "Wake up and zap.")
 						RecordTimerEntry.setWasInStandby()
-						#set service to zap after standby
-						Screens.Standby.inStandby.prev_running_service = self.service_ref.ref
+						Screens.Standby.inStandby.prev_running_service = self.service_ref.ref  # Set service to zap after standby.
 						Screens.Standby.inStandby.paused_service = None
-						#wakeup standby
-						Screens.Standby.inStandby.Power()
+						Screens.Standby.inStandby.Power()  # Wake up standby.
 				else:
 					self.sendactivesource()
 					if RecordTimerEntry.wasInDeepStandby:
@@ -484,10 +553,10 @@ class RecordTimerEntry(timer.TimerEntry):
 					pip_zap = self.pipzap or (cur_ref and cur_ref.getPath() and '%3a//' not in cur_ref.toString() and SystemInfo["PIPAvailable"])
 					if pip_zap:
 						cur_ref_group = NavigationInstance.instance.getCurrentlyPlayingServiceOrGroup()
-						if cur_ref_group and cur_ref_group != self.service_ref.ref and self.InfoBarInstance and hasattr(self.InfoBarInstance.session, 'pipshown') and not Components.ParentalControl.parentalControl.isProtected(self.service_ref.ref):
-							if self.InfoBarInstance.session.pipshown:
-								hasattr(self.InfoBarInstance, "showPiP") and self.InfoBarInstance.showPiP()
-							if hasattr(self.InfoBarInstance.session, 'pip'):
+						if cur_ref_group and cur_ref_group != self.service_ref.ref and self.InfoBarInstance and hasattr(self.InfoBarInstance.session, "pipshown") and not Components.ParentalControl.parentalControl.isProtected(self.service_ref.ref):
+							if self.InfoBarInstance.session.pipshown and hasattr(self.InfoBarInstance, "showPiP"):
+								self.InfoBarInstance.showPiP()
+							if hasattr(self.InfoBarInstance.session, "pip"):
 								del self.InfoBarInstance.session.pip
 								self.InfoBarInstance.session.pipshown = False
 							self.InfoBarInstance.session.pip = self.InfoBarInstance.session.instantiateDialog(PictureInPicture)
@@ -495,7 +564,7 @@ class RecordTimerEntry(timer.TimerEntry):
 							if self.InfoBarInstance.session.pip.playService(self.service_ref.ref):
 								self.InfoBarInstance.session.pipshown = True
 								self.InfoBarInstance.session.pip.servicePath = self.InfoBarInstance.servicelist and self.InfoBarInstance.servicelist.getCurrentServicePath()
-								self.log(11, "zapping as PiP")
+								self.log(11, "Zapping as PiP.")
 								if notify:
 									AddPopup(text=_("Zapped to timer service %s as Picture in Picture!") % self.service_ref.getServiceName(), type=MessageBox.TYPE_INFO, timeout=5)
 								return True
@@ -506,7 +575,7 @@ class RecordTimerEntry(timer.TimerEntry):
 						if self.ts_dialog is None:
 							self.openChoiceActionBeforeZap()
 					else:
-						self.log(11, "zapping")
+						self.log(11, "Zapping.")
 						force = False
 						if cur_ref and cur_ref.getPath():
 							if self.InfoBarInstance:
@@ -541,11 +610,10 @@ class RecordTimerEntry(timer.TimerEntry):
 			else:
 				if RecordTimerEntry.wasInDeepStandby:
 					RecordTimerEntry.keypress()
-					if Screens.Standby.inStandby: #In case some plugin did put the receiver already in standby
+					if Screens.Standby.inStandby:  # In case some plugin did put the receiver already in standby.
 						config.misc.standbyCounter.value = 0
 					else:
 						AddNotification(Screens.Standby.Standby, StandbyCounterIncrease=False)
-
 				if config.recording.zap_record_service_in_standby.value and Screens.Standby.inStandby:
 					cur_ref = NavigationInstance.instance.getCurrentlyPlayingServiceReference()
 					if self.rec_ref and (not cur_ref or cur_ref != self.rec_ref):
@@ -553,30 +621,31 @@ class RecordTimerEntry(timer.TimerEntry):
 						cur_ref = NavigationInstance.instance.getCurrentlyPlayingServiceReference()
 						if cur_ref and self.rec_ref == cur_ref:
 							self.background_zap = cur_ref
-
 				record_res = self.record_service.start()
 				self.setRecordingPreferredTuner(setdefault=True)
 				if record_res:
-					self.log(13, "start recording error: %d" % record_res)
+					self.log(13, "Start recording error %d!" % record_res)
 					self.do_backoff()
 					# retry
 					self.begin = time() + self.backoff
 					return False
-
 				# Tell the trashcan we started recording. The trashcan gets events,
 				# but cannot tell what the associated path is.
-				trashcan_instance.markDirty(self.Filename)
-				self.log_tuner(11, "start")
+				try:
+					TrashcanInstance.markDirty(self.recordingFilename)
+				except:
+					pass
+				self.log_tuner(11, "Start")
 				return True
-
 		elif next_state == self.StateEnded:
 			old_end = self.end
 			self.ts_dialog = None
 			if self.setAutoincreaseEnd():
-				self.log(12, "autoincrease recording %d minute(s)" % int((self.end - old_end) / 60))
+				self.log(12, "Auto increase recording length %d minute(s)." % int((self.end - old_end) / 60))
 				self.state -= 1
 				return True
-			self.log_tuner(12, "stop")
+			self.log_tuner(12, "Stop")
+			RecordingsState(-1)
 			if not self.justplay:
 				NavigationInstance.instance.stopRecordService(self.record_service)
 				if self.background_zap is not None and Screens.Standby.inStandby:
@@ -587,14 +656,14 @@ class RecordTimerEntry(timer.TimerEntry):
 				self.rec_ref = None
 				self.background_zap = None
 			if not checkForRecordings():
-				if self.afterEvent == AFTEREVENT.DEEPSTANDBY or self.afterEvent == AFTEREVENT.AUTO and (Screens.Standby.inStandby or RecordTimerEntry.wasInStandby) and not config.misc.standbyCounter.value:
+				if self.afterEvent == AFTEREVENT.DEEPSTANDBY or (wasRecTimerWakeup and self.afterEvent == AFTEREVENT.AUTO and Screens.Standby.inStandby or RecordTimerEntry.wasInStandby) and not config.misc.standbyCounter.value:
 					if not Screens.Standby.inTryQuitMainloop:
 						if Screens.Standby.inStandby:
 							RecordTimerEntry.TryQuitMainloop()
 						else:
 							msg = _("A completed recording timer is about to shut down your receiver. Would you like to proceed?")
 							AddNotificationWithCallback(self.sendTryQuitMainloopNotification, MessageBox, msg, timeout=20, default=True)
-				elif self.afterEvent == AFTEREVENT.STANDBY or self.afterEvent == AFTEREVENT.AUTO and RecordTimerEntry.wasInStandby:
+				elif self.afterEvent == AFTEREVENT.STANDBY or (not wasRecTimerWakeup and self.autostate and self.afterEvent == AFTEREVENT.AUTO) or RecordTimerEntry.wasInStandby:
 					if not Screens.Standby.inStandby:
 						msg = _("A completed recording timer is about to put your receiver in standby mode. Would you like to proceed?")
 						AddNotificationWithCallback(self.sendStandbyNotification, MessageBox, msg, timeout=20, default=True)
@@ -609,7 +678,6 @@ class RecordTimerEntry(timer.TimerEntry):
 			new_end = int(time()) + self.autoincreasetime
 		else:
 			new_end = entry.begin - 30
-
 		dummyentry = RecordTimerEntry(self.service_ref, self.begin, new_end, self.name, self.description, self.eit, disabled=True, justplay=self.justplay, afterEvent=self.afterEvent, dirname=self.dirname, tags=self.tags)
 		dummyentry.disabled = self.disabled
 		timersanitycheck = TimerSanityCheck(NavigationInstance.instance.RecordTimer.timer_list, dummyentry)
@@ -617,7 +685,7 @@ class RecordTimerEntry(timer.TimerEntry):
 			simulTimerList = timersanitycheck.getSimulTimerList()
 			if simulTimerList is not None and len(simulTimerList) > 1:
 				new_end = simulTimerList[1].begin
-				new_end -= 30				# 30 Sekunden Prepare-Zeit lassen
+				new_end -= 30  # Leave a few seconds (30) of preparation time.
 		if new_end <= time():
 			return False
 		self.end = new_end
@@ -652,53 +720,47 @@ class RecordTimerEntry(timer.TimerEntry):
 			message += _("Timeshift is running. Select an action.\n")
 			choice = [(_("Zap"), "zap"), (_("Don't zap and disable timer"), "disable"), (_("Don't zap and remove timer"), "remove")]
 			if not self.InfoBarInstance.save_timeshift_file:
-				choice.insert(1, (_("Save timeshift in movie dir and zap"), "save_movie"))
-				if self.InfoBarInstance.timeshiftActivated():
-					choice.insert(0, (_("Save timeshift and zap"), "save"))
-				else:
-					choice.insert(1, (_("Save timeshift and zap"), "save"))
+				choice.insert(0, (_("Save timeshift and zap"), "save"))
 			else:
 				message += _("Reminder, you have chosen to save timeshift file.")
-			#if self.justplay or self.always_zap:
-			#	choice.insert(2, (_("Don't zap"), "continue"))
+			# If self.justplay or self.always_zap:
+			# 	choice.insert(2, (_("Don't zap"), "continue"))
 			choice.insert(2, (_("Don't zap"), "continue"))
 
 			def zapAction(choice):
 				start_zap = True
 				if choice:
-					if choice in ("zap", "save", "save_movie"):
-						self.log(8, "zap to recording service")
-						if choice in ("save", "save_movie"):
+					if choice in ("zap", "save"):
+						self.log(8, "Zap to recording service.")
+						if choice == "save":
 							ts = self.InfoBarInstance.getTimeshift()
 							if ts and ts.isTimeshiftEnabled():
-								if choice == "save_movie":
-									self.InfoBarInstance.save_timeshift_in_movie_dir = True
-								self.InfoBarInstance.save_timeshift_file = True
-								ts.saveTimeshiftFile()
 								del ts
-								self.InfoBarInstance.saveTimeshiftFiles()
+								self.InfoBarInstance.save_timeshift_file = True
+								self.InfoBarInstance.SaveTimeshift()
 					elif choice == "disable":
 						self.disable()
 						NavigationInstance.instance.RecordTimer.timeChanged(self)
 						start_zap = False
-						self.log(8, "zap canceled by the user, timer disabled")
+						self.log(8, "Zap canceled by the user, timer disabled.")
 					elif choice == "remove":
 						start_zap = False
 						self.afterEvent = AFTEREVENT.NONE
 						NavigationInstance.instance.RecordTimer.removeEntry(self)
-						self.log(8, "zap canceled by the user, timer removed")
+						self.log(8, "Zap canceled by the user, timer removed.")
 					elif choice == "continue":
 						if self.justplay:
 							self.end = self.begin
 						start_zap = False
-						self.log(8, "zap canceled by the user")
+						self.log(8, "Zap canceled by the user.")
 				if start_zap:
 					if not self.justplay:
 						self.setRecordingPreferredTuner()
 						self.failureCB(answer=True)
 					else:
-						self.log(8, "zapping")
+						self.log(8, "Zapping.")
 						self.failureCB(answer=True, close_pip=False)
+
 			self.ts_dialog = self.InfoBarInstance.session.openWithCallback(zapAction, MessageBox, message, simple=True, list=choice, timeout=20)
 
 	def sendStandbyNotification(self, answer):
@@ -710,24 +772,29 @@ class RecordTimerEntry(timer.TimerEntry):
 		RecordTimerEntry.keypress()
 		if answer:
 			AddNotification(Screens.Standby.TryQuitMainloop, 1)
+		else:
+			global wasRecTimerWakeup
+			wasRecTimerWakeup = False
 
 	def getNextActivation(self):
 		if self.state == self.StateEnded:
 			return self.end
-
 		next_state = self.state + 1
-
-		return {self.StatePrepared: self.start_prepare,
-				self.StateRunning: self.begin,
-				self.StateEnded: self.end}[next_state]
+		return {
+			self.StatePrepared: self.start_prepare,
+			self.StateRunning: self.begin,
+			self.StateEnded: self.end
+		}[next_state]
 
 	def failureCB(self, answer=False, close_pip=True, ref=None):
 		self.ts_dialog = None
 		if answer:
-			self.log(13, "ok, zapped away")
-			if close_pip and not self.first_try_prepare and self.InfoBarInstance and hasattr(self.InfoBarInstance.session, 'pipshown') and self.InfoBarInstance.session.pipshown:
-				hasattr(self.InfoBarInstance, "showPiP") and self.InfoBarInstance.showPiP()
-				if hasattr(self.InfoBarInstance.session, 'pip'):
+			self.log(13, "Okay, zapped away.")
+			if close_pip and not self.first_try_prepare:
+				if self.InfoBarInstance and hasattr(self.InfoBarInstance.session, "pipshown") and self.InfoBarInstance.session.pipshown:
+					if hasattr(self.InfoBarInstance, "showPiP"):
+						self.InfoBarInstance.showPiP()
+				if hasattr(self.InfoBarInstance.session, "pip"):
 					del self.InfoBarInstance.session.pip
 					self.InfoBarInstance.session.pipshown = False
 			addService = False
@@ -744,42 +811,47 @@ class RecordTimerEntry(timer.TimerEntry):
 						self.InfoBarInstance.servicelist.addToHistory(self.service_ref.ref)
 						self.InfoBarInstance.servicelist.saveChannel(self.service_ref.ref)
 		else:
-			self.log(14, "user didn't want to zap away, record will probably fail")
+			self.log(14, "User didn't want to zap away, record will probably fail.")
 
-	# Report the tuner that the current recording is using
-	def log_tuner(self, level, state):
-		feinfo = self.record_service and hasattr(self.record_service, "frontendInfo") and self.record_service.frontendInfo()
+	def log_tuner(self, level, state):  # Report the tuner that the current recording is using.
+		# If we have a Zap timer then the tuner is for the current service
+		if self.justplay:
+			timer_rs = NavigationInstance.instance.getCurrentService()
+		else:
+			timer_rs = self.record_service
+		feinfo = timer_rs and hasattr(timer_rs, "frontendInfo") and timer_rs.frontendInfo()
 		fedata = feinfo and hasattr(feinfo, "getFrontendData") and feinfo.getFrontendData()
-		tuner_info = fedata and "tuner_number" in fedata and chr(ord('A') + fedata.get("tuner_number")) or "(fallback) stream"
-		self.log(level, "%s recording on tuner: %s" % (state, tuner_info))
+		tuner_info = fedata and "tuner_number" in fedata and chr(ord("A") + fedata.get("tuner_number")) or "(fallback) stream"
+		self.log(level, "%s recording on tuner %s." % (state, tuner_info))
 
 	def timeChanged(self):
-		old_prepare = self.start_prepare
+		oldPrepare = self.start_prepare
 		self.start_prepare = self.begin - self.prepare_time
 		self.backoff = 0
-
-		if int(old_prepare) != int(self.start_prepare):
-			self.log(15, "record time changed, start prepare is now: %s" % ctime(self.start_prepare))
+		print("[RecordTimer] DEBUG: In timeChanged. oldPrepare=%d, newPrepare=%d." % (oldPrepare, self.start_prepare))
+		if int(oldPrepare) and int(oldPrepare) != int(self.start_prepare):
+			self.log(15, "Record time changed, start prepare is now %s." % ctime(self.start_prepare))
 
 	def gotRecordEvent(self, record, event):
 		# TODO: this is not working (never true), please fix. (comparing two swig wrapped ePtrs)
 		if self.__record_service.__deref__() != record.__deref__():
 			return
-		self.log(16, "record event %d" % event)
+		self.log(16, "Record event %d." % event)
 		if event == iRecordableService.evRecordWriteError:
-			print("WRITE ERROR on recording, disk full?")
-			# show notification. the 'id' will make sure that it will be
+			print("[RecordTimer] Write error on recording!")
+			# show notification. the "id" will make sure that it will be
 			# displayed only once, even if more timers are failing at the
 			# same time. (which is very likely in case of disk fullness)
-			AddPopup(text=_("Write error while recording. Disk full?\n"), type=MessageBox.TYPE_ERROR, timeout=0, id="DiskFullMessage")
+			AddPopup(text=_("Write error while recording.\n"), type=MessageBox.TYPE_ERROR, timeout=0, id="WriteErrorMessage")
 			# ok, the recording has been stopped. we need to properly note
 			# that in our state, with also keeping the possibility to re-try.
 			# TODO: this has to be done.
 		elif event == iRecordableService.evStart:
+			RecordingsState(1)
 			text = _("A recording has started:\n%s") % self.name
 			notify = config.usage.show_message_when_recording_starts.value and not Screens.Standby.inStandby and self.InfoBarInstance and self.InfoBarInstance.execing
 			if self.dirnameHadToFallback:
-				text = '\n'.join((text, _("Please note that the previously selected media could not be accessed and therefore the default directory is being used instead.")))
+				text = "\n".join((text, _("Please note that the previously selected media could not be accessed and therefore the default directory is being used instead.")))
 				notify = True
 			if notify:
 				AddPopup(text=text, type=MessageBox.TYPE_INFO, timeout=3)
@@ -790,85 +862,157 @@ class RecordTimerEntry(timer.TimerEntry):
 				self.processRepeated(findRunningEvent=False)
 			NavigationInstance.instance.RecordTimer.doActivate(self)
 
-	# we have record_service as property to automatically subscribe to record service events
-	def setRecordService(self, service):
+	def setRecordService(self, service):  # We have record_service as property to automatically subscribe to record service events.
 		if self.__record_service is not None:
-			print("[remove callback]")
+			print("[RecordTimer] Remove callback.")
 			NavigationInstance.instance.record_event.remove(self.gotRecordEvent)
-
 		self.__record_service = service
-
 		if self.__record_service is not None:
-			print("[add callback]")
+			print("[RecordTimer] Add callback.")
 			NavigationInstance.instance.record_event.append(self.gotRecordEvent)
 
 	record_service = property(lambda self: self.__record_service, setRecordService)
 
 
-def createTimer(xml):
-	begin = int(xml.get("begin"))
-	end = int(xml.get("end"))
-	serviceref = ServiceReference(xml.get("serviceref"))
-	description = xml.get("description")
-	repeated = xml.get("repeated")
-	rename_repeat = int(xml.get("rename_repeat") or "1")
-	disabled = int(xml.get("disabled") or "0")
-	justplay = int(xml.get("justplay") or "0")
-	always_zap = int(xml.get("always_zap") or "0")
-	zap_wakeup = str(xml.get("zap_wakeup") or "always")
-	pipzap = int(xml.get("pipzap") or "0")
-	conflict_detection = int(xml.get("conflict_detection") or "1")
-	afterevent = str(xml.get("afterevent") or "nothing")
-	afterevent = {
-		"nothing": AFTEREVENT.NONE,
-		"standby": AFTEREVENT.STANDBY,
-		"deepstandby": AFTEREVENT.DEEPSTANDBY,
-		"auto": AFTEREVENT.AUTO
-		}[afterevent]
-	eit = xml.get("eit")
-	if eit and eit != "None":
-		eit = int(eit)
-	else:
-		eit = None
-	location = xml.get("location")
-	if location == "None":
-		location = None
-	tags = xml.get("tags")
-	if tags and tags != "None":
-		tags = tags.split(' ')
-	else:
-		tags = None
-	descramble = int(xml.get("descramble") or "1")
-	record_ecm = int(xml.get("record_ecm") or "0")
-
-	name = xml.get("name")
-	#filename = xml.get("filename")
-	entry = RecordTimerEntry(serviceref, begin, end, name, description, eit, disabled, justplay, afterevent, dirname=location, tags=tags, descramble=descramble, record_ecm=record_ecm, always_zap=always_zap, zap_wakeup=zap_wakeup, rename_repeat=rename_repeat, conflict_detection=conflict_detection, pipzap=pipzap)
-	entry.repeated = int(repeated)
-	flags = xml.get("flags")
-	if flags:
-		entry.flags = set(flags.split(' '))
-
-	for l in xml.findall("log"):
-		time = int(l.get("time"))
-		code = int(l.get("code"))
-		msg = l.text.strip()
-		entry.log_entries.append((time, code, msg))
-
-	return entry
-
-
-class RecordTimer(timer.Timer):
+class RecordTimer(Timer):
 	def __init__(self):
-		timer.Timer.__init__(self)
-
-		self.Filename = resolveFilename(SCOPE_CONFIG, "timers.xml")
+		Timer.__init__(self)
 		self.fallback_timer_list = []
+		self.timersFilename = resolveFilename(SCOPE_CONFIG, "timers.xml")
+		self.loadTimers()
 
-		try:
-			self.loadTimer()
-		except IOError:
-			print("unable to load timers from file!")
+	def loadTimers(self, justLoad=False):
+		timersDom = fileReadXML(self.timersFilename, source=MODULE_NAME)
+		if timersDom is None:
+			if not exists(self.timersFilename):
+				return
+			AddPopup(_("The timer file 'timers.xml' is corrupt and could not be loaded."), type=MessageBox.TYPE_ERROR, timeout=0, id="TimerLoadFailed")
+			print("[RecordTimer] Error: Loading 'timers.xml' failed!")
+			try:
+				rename(self.timersFilename, "%s_bad" % self.timersFilename)
+			except (IOError, OSError) as err:
+				print("[RecordTimer] Error %d: Renaming broken timer file failed!  (%s)" % (err.errno, err.strerror))
+			return
+		check = False
+		overlapText = [_("Timer overlaps detected in timers.xml!"), _("Please check all timers.")]
+		for timer in timersDom.findall("timer"):
+			newTimer = self.createTimer(timer)
+			conflictList = self.record(newTimer, ignoreTSC=True, dosave=False, loadtimer=True, justLoad=justLoad)
+			if conflictList:
+				check = True
+				if newTimer in conflictList:
+					overlapText.append(_("Timer '%s' disabled!") % newTimer.name)
+		if check:
+			AddPopup("\n".join(overlapText), type=MessageBox.TYPE_ERROR, timeout=0, id="TimerLoadFailed")
+
+	def loadTimer(self, justLoad=False):
+		return self.loadTimers(justLoad=justLoad)
+
+	def saveTimers(self):
+		timerList = ["<?xml version=\"1.0\" ?>", "<timers>"]
+		for timer in self.timer_list + self.processed_timers:
+			if timer.dontSave:  # Some timers (instant records) don't want to be saved so skip them.
+				continue
+			timerEntry = []
+			timerEntry.append("begin=\"%d\"" % timer.begin)
+			timerEntry.append("end=\"%d\"" % timer.end)
+			timerEntry.append("serviceref=\"%s\"" % stringToXML(str(timer.service_ref)))
+			timerEntry.append("repeated=\"%d\"" % timer.repeated)
+			timerEntry.append("name=\"%s\"" % stringToXML(timer.name))
+			timerEntry.append("description=\"%s\"" % stringToXML(timer.description))
+			timerEntry.append("afterevent=\"%s\"" % stringToXML({
+				AFTEREVENT.NONE: "nothing",
+				AFTEREVENT.STANDBY: "standby",
+				AFTEREVENT.DEEPSTANDBY: "deepstandby",
+				AFTEREVENT.AUTO: "auto"
+			}[timer.afterEvent]))
+			if timer.eit is not None:
+				timerEntry.append("eit=\"%d\"" % timer.eit)
+			if timer.dirname:
+				timerEntry.append("location=\"%s\"" % stringToXML(timer.dirname))
+			if timer.tags:
+				timerEntry.append("tags=\"%s\"" % stringToXML(" ".join(timer.tags)))
+			if timer.disabled:
+				timerEntry.append("disabled=\"%d\"" % timer.disabled)
+			timerEntry.append("justplay=\"%d\"" % timer.justplay)
+			timerEntry.append("always_zap=\"%d\"" % timer.always_zap)
+			timerEntry.append("pipzap=\"%d\"" % timer.pipzap)
+			timerEntry.append("zap_wakeup=\"%s\"" % timer.zap_wakeup)
+			timerEntry.append("rename_repeat=\"%d\"" % timer.rename_repeat)
+			timerEntry.append("conflict_detection=\"%d\"" % timer.conflict_detection)
+			timerEntry.append("descramble=\"%d\"" % timer.descramble)
+			timerEntry.append("record_ecm=\"%d\"" % timer.record_ecm)
+			timerEntry.append("isAutoTimer=\"%d\"" % timer.isAutoTimer)
+			if timer.flags:
+				timerEntry.append("flags=\"%s\"" % " ".join([stringToXML(x) for x in timer.flags]))
+			timerList.append("\t<timer %s>" % " ".join(timerEntry))
+			for time, code, msg in timer.log_entries:
+				timerList.append("\t\t<log code=\"%d\" time=\"%d\">%s</log>" % (code, time, stringToXML(msg)))
+			timerList.append("\t</timer>")
+		timerList.append("</timers>\n")
+		#
+		# We have to run this section with a lock.  Imagine setting a timer
+		# manually while the (background) AutoTimer scan is also setting a timer.
+		# So we have two timers being set at "the same time".  Two process arrive
+		# at the open().  The first opens it and writes to *.writing.  The
+		# second opens it and overwrites (possibly slightly different) data to
+		# the same file.  The first then gets to the rename and succeeds but the
+		# second then tries to rename, but the "*.writing" file is now absent.
+		# The result is OSError: [Errno 2] No such file or directory!
+		#
+		# NOTE that as Python threads are not concurrent (they run serially and
+		# switch when one does something like I/O) we don't need to run the
+		# list-creating loop under the lock.
+		#
+		with writeLock:
+			file = open("%s.writing" % self.timersFilename, "w")
+			file.write("\n".join(timerList))
+			file.flush()
+			fsync(file.fileno())
+			file.close()
+			rename("%s.writing" % self.timersFilename, self.timersFilename)
+
+	def saveTimer(self):
+		return self.saveTimers()
+
+	def createTimer(self, timerDom):
+		serviceReference = ServiceReference(timerDom.get("serviceref"))
+		begin = int(timerDom.get("begin"))
+		end = int(timerDom.get("end"))
+		name = timerDom.get("name")
+		description = timerDom.get("description")
+		eit = timerDom.get("eit")
+		eit = int(eit) if eit and eit != "None" else None
+		disabled = bool(int(timerDom.get("disabled", False)))
+		justPlay = bool(int(timerDom.get("justplay", False)))
+		afterEvent = {
+			"nothing": AFTEREVENT.NONE,
+			"standby": AFTEREVENT.STANDBY,
+			"deepstandby": AFTEREVENT.DEEPSTANDBY,
+			"auto": AFTEREVENT.AUTO
+		}.get(timerDom.get("afterevent", "nothing"), "nothing")
+		location = timerDom.get("location")
+		if location == "None":
+			location = None
+		tags = timerDom.get("tags")
+		tags = tags.split(" ") if tags and tags != "None" else None
+		descramble = bool(int(timerDom.get("descramble", True)))
+		recordEcm = bool(int(timerDom.get("record_ecm", False)))
+		isAutoTimer = bool(int(timerDom.get("isAutoTimer", False)))
+		alwaysZap = bool(int(timerDom.get("always_zap", False)))
+		zapWakeup = timerDom.get("zap_wakeup", "always")
+		renameRepeat = bool(int(timerDom.get("rename_repeat", True)))
+		conflictDetection = bool(int(timerDom.get("conflict_detection", True)))
+		pipZap = bool(int(timerDom.get("pipzap", False)))
+		# filename = timerDom.get("filename")
+		entry = RecordTimerEntry(serviceReference, begin, end, name, description, eit, disabled, justPlay, afterEvent, dirname=location, tags=tags, descramble=descramble, record_ecm=recordEcm, isAutoTimer=isAutoTimer, always_zap=alwaysZap, zap_wakeup=zapWakeup, rename_repeat=renameRepeat, conflict_detection=conflictDetection, pipzap=pipZap)
+		entry.repeated = bool(int(timerDom.get("repeated", False)))
+		flags = timerDom.get("flags")
+		if flags:
+			entry.flags = set(flags.split(" "))
+		for log in timerDom.findall("log"):
+			entry.log_entries.append((int(log.get("time")), int(log.get("code")), log.text.strip()))
+		return entry
 
 	def doActivate(self, w):
 		# when activating a timer which has already passed,
@@ -881,9 +1025,7 @@ class RecordTimer(timer.Timer):
 			# the timer entry itself will fix up the delay then.
 			if w.activate():
 				w.state += 1
-
 		self.timer_list.remove(w)
-
 		# did this timer reached the last state?
 		if w.state < RecordTimerEntry.StateEnded:
 			# no, sort it into active list
@@ -905,15 +1047,17 @@ class RecordTimer(timer.Timer):
 				# If we want to keep done timers, re-insert in the active list
 				if config.recording.keep_timers.value > 0 and w not in self.processed_timers:
 					insort(self.processed_timers, w)
-					self.saveTimer()
-
+					self.saveTimers()
 		self.stateChanged(w)
+
+	def isRecTimerWakeup(self):
+		return wasRecTimerWakeup
 
 	def checkWrongRunningTimers(self):
 		now = time() + 100
 		if int(now) > 1072224000:
-			wrong_timers = [entry for entry in (self.processed_timers + self.timer_list) if entry.state in (1, 2) and entry.begin > now]
-			for timer in wrong_timers:
+			wrongTimers = [entry for entry in (self.processed_timers + self.timer_list) if entry.state in (1, 2) and entry.begin > now]
+			for timer in wrongTimers:
 				timer.state = RecordTimerEntry.StateWaiting
 				self.timeChanged(timer)
 
@@ -922,142 +1066,6 @@ class RecordTimer(timer.Timer):
 			if timer.isRunning() and not timer.justplay:
 				return True
 		return False
-
-	def loadTimer(self):
-		try:
-			doc = xml.etree.ElementTree.parse(self.Filename)
-		except SyntaxError:
-			AddPopup(_("The timer file (timers.xml) is corrupt and could not be loaded."), type=MessageBox.TYPE_ERROR, timeout=0, id="TimerLoadFailed")
-
-			print("timers.xml failed to load!")
-			try:
-				import os
-				os.rename(self.Filename, self.Filename + "_old")
-			except (IOError, OSError):
-				print("renaming broken timer failed")
-			return
-		except IOError:
-			print("timers.xml not found!")
-			return
-
-		root = doc.getroot()
-
-		checkit = False
-		timer_text = ""
-		for timer in root.findall("timer"):
-			newTimer = createTimer(timer)
-			conflict_list = self.record(newTimer, ignoreTSC=True, dosave=False, loadtimer=True)
-			if conflict_list:
-				checkit = True
-				if newTimer in conflict_list:
-					timer_text += _("\nTimer '%s' disabled!") % newTimer.name
-		if checkit:
-			AddPopup(_("Timer overlap in timers.xml detected!\nPlease recheck it!") + timer_text, type=MessageBox.TYPE_ERROR, timeout=0, id="TimerLoadFailed")
-
-	def saveTimer(self):
-		#root_element = xml.etree.ElementTree.Element('timers')
-		#root_element.text = "\n"
-
-		#for timer in self.timer_list + self.processed_timers:
-			# some timers (instant records) don't want to be saved.
-			# skip them
-			#if timer.dontSave:
-				#continue
-			#t = xml.etree.ElementTree.SubElement(root_element, 'timers')
-			#t.set("begin", str(int(timer.begin)))
-			#t.set("end", str(int(timer.end)))
-			#t.set("serviceref", str(timer.service_ref))
-			#t.set("repeated", str(timer.repeated))
-			#t.set("name", timer.name)
-			#t.set("description", timer.description)
-			#t.set("afterevent", str({
-			#	AFTEREVENT.NONE: "nothing",
-			#	AFTEREVENT.STANDBY: "standby",
-			#	AFTEREVENT.DEEPSTANDBY: "deepstandby",
-			#	AFTEREVENT.AUTO: "auto"}))
-			#if timer.eit is not None:
-			#	t.set("eit", str(timer.eit))
-			#if timer.dirname is not None:
-			#	t.set("location", str(timer.dirname))
-			#t.set("disabled", str(int(timer.disabled)))
-			#t.set("justplay", str(int(timer.justplay)))
-			#t.text = "\n"
-			#t.tail = "\n"
-
-			#for time, code, msg in timer.log_entries:
-				#l = xml.etree.ElementTree.SubElement(t, 'log')
-				#l.set("time", str(time))
-				#l.set("code", str(code))
-				#l.text = str(msg)
-				#l.tail = "\n"
-
-		#doc = xml.etree.ElementTree.ElementTree(root_element)
-		#doc.write(self.Filename)
-
-		list = []
-
-		list.append('<?xml version="1.0" ?>\n')
-		list.append('<timers>\n')
-
-		for timer in self.timer_list + self.processed_timers:
-			if timer.dontSave:
-				continue
-
-			list.append('<timer')
-			list.append(' begin="' + str(int(timer.begin)) + '"')
-			list.append(' end="' + str(int(timer.end)) + '"')
-			list.append(' serviceref="' + stringToXML(str(timer.service_ref)) + '"')
-			list.append(' repeated="' + str(int(timer.repeated)) + '"')
-			list.append(' name="' + str(stringToXML(timer.name)) + '"')
-			list.append(' description="' + str(stringToXML(timer.description)) + '"')
-			list.append(' afterevent="' + str(stringToXML({
-				AFTEREVENT.NONE: "nothing",
-				AFTEREVENT.STANDBY: "standby",
-				AFTEREVENT.DEEPSTANDBY: "deepstandby",
-				AFTEREVENT.AUTO: "auto"
-				}[timer.afterEvent])) + '"')
-			if timer.eit is not None:
-				list.append(' eit="' + str(timer.eit) + '"')
-			if timer.dirname:
-				list.append(' location="' + str(stringToXML(timer.dirname)) + '"')
-			if timer.tags:
-				list.append(' tags="' + str(stringToXML(' '.join(timer.tags))) + '"')
-			if timer.disabled:
-				list.append(' disabled="' + str(int(timer.disabled)) + '"')
-			list.append(' justplay="' + str(int(timer.justplay)) + '"')
-			list.append(' always_zap="' + str(int(timer.always_zap)) + '"')
-			list.append(' pipzap="' + str(int(timer.pipzap)) + '"')
-			list.append(' zap_wakeup="' + str(timer.zap_wakeup) + '"')
-			list.append(' rename_repeat="' + str(int(timer.rename_repeat)) + '"')
-			list.append(' conflict_detection="' + str(int(timer.conflict_detection)) + '"')
-			list.append(' descramble="' + str(int(timer.descramble)) + '"')
-			list.append(' record_ecm="' + str(int(timer.record_ecm)) + '"')
-			if timer.flags:
-				list.append(' flags="' + ' '.join([stringToXML(x) for x in timer.flags]) + '"')
-			list.append('>\n')
-
-			if config.recording.debug.value:
-				for time, code, msg in timer.log_entries:
-					list.append('<log')
-					list.append(' code="' + str(code) + '"')
-					list.append(' time="' + str(time) + '"')
-					list.append('>')
-					list.append(str(stringToXML(msg)))
-					list.append('</log>\n')
-
-			list.append('</timer>\n')
-
-		list.append('</timers>\n')
-
-		file = open(self.Filename + ".writing", "w")
-		for x in list:
-			file.write(x)
-		file.flush()
-
-		import os
-		os.fsync(file.fileno())
-		file.close()
-		os.rename(self.Filename + ".writing", self.Filename)
 
 	def getNextZapTime(self, isWakeup=False):
 		now = time()
@@ -1070,19 +1078,19 @@ class RecordTimer(timer.Timer):
 	def getNextRecordingTime(self):
 		now = time()
 		for timer in self.timer_list:
-			next_act = timer.getNextActivation()
-			if timer.justplay or next_act < now:
+			nextActivation = timer.getNextActivation()
+			if timer.justplay or nextActivation < now:
 				continue
-			return next_act
+			return nextActivation
 		return -1
 
 	def getNextTimerTime(self, isWakeup=False):
 		now = time()
 		for timer in self.timer_list:
-			next_act = timer.getNextActivation()
-			if next_act < now or isWakeup and timer.justplay and timer.zap_wakeup in ("from_standby", "never"):
+			nextActivation = timer.getNextActivation()
+			if nextActivation < now or isWakeup and timer.justplay and timer.zap_wakeup in ("from_standby", "never"):
 				continue
-			return next_act
+			return nextActivation
 		return -1
 
 	def isNextRecordAfterEventActionAuto(self):
@@ -1097,17 +1105,24 @@ class RecordTimer(timer.Timer):
 					return True
 		return False
 
-	def record(self, entry, ignoreTSC=False, dosave=True, loadtimer=False):
+	# If justLoad is True then we (temporarily) turn off conflict detection
+	# as we load.  On a restore we may not have the correct tuner
+	# configuration (and no USB tuners).
+	#
+	def record(self, entry, ignoreTSC=False, dosave=True, loadtimer=False, justLoad=False):
+		real_cd = entry.conflict_detection
+		if justLoad:
+			entry.conflict_detection = False
 		check_timer_list = self.timer_list[:]
 		timersanitycheck = TimerSanityCheck(check_timer_list, entry)
 		answer = None
 		if not timersanitycheck.check():
 			if not ignoreTSC:
-				print("[RecordTimer] timer conflict detected!")
+				print("[RecordTimer] Timer conflict detected!")
 				print(timersanitycheck.getSimulTimerList())
 				return timersanitycheck.getSimulTimerList()
 			else:
-				print("[RecordTimer] ignore timer conflict...")
+				print("[RecordTimer] Ignore timer conflict.")
 				if not dosave and loadtimer:
 					simulTimerList = timersanitycheck.getSimulTimerList()
 					if entry in simulTimerList:
@@ -1116,18 +1131,19 @@ class RecordTimer(timer.Timer):
 							check_timer_list.remove(entry)
 					answer = simulTimerList
 		elif timersanitycheck.doubleCheck():
-			print("[RecordTimer] ignore double timer...")
+			print("[RecordTimer] Ignore duplicated timer.")
 			return None
-		elif not loadtimer and not entry.disabled and not entry.justplay and entry.state == 0 and not (entry.service_ref and '%3a//' in entry.service_ref.ref.toString()):
+		elif not loadtimer and not entry.disabled and not entry.justplay and entry.state == 0 and not (entry.service_ref and "%3a//" in entry.service_ref.ref.toString()):
 			for x in check_timer_list:
-				if x.begin == entry.begin and not x.disabled and not x.justplay and not (x.service_ref and '%3a//' in x.service_ref.ref.toString()):
+				if x.begin == entry.begin and not x.disabled and not x.justplay and not (x.service_ref and "%3a//" in x.service_ref.ref.toString()):
 					entry.begin += 1
+		entry.conflict_detection = real_cd
 		entry.timeChanged()
-		print("[Timer] Record " + str(entry))
+		print("[RecordTimer] Record %s." % str(entry))
 		entry.Timer = self
 		self.addTimerEntry(entry)
 		if dosave:
-			self.saveTimer()
+			self.saveTimers()
 		return answer
 
 	def isInRepeatTimer(self, timer, event):
@@ -1163,69 +1179,57 @@ class RecordTimer(timer.Timer):
 			xend += 1440
 		if timer.repeated & (1 << bday) and checking_time:
 			if begin2 < xbegin <= end2:
-				if xend < end2:
-					# recording within event
+				if xend < end2:  # Recording within event.
 					time_match = (xend - xbegin) * 60
 					is_editable = True
-				else:
-					# recording last part of event
+				else:  # Recording last part of event.
 					time_match = (end2 - xbegin) * 60
 					summary_end = (xend - end2) * 60
 					is_editable = not summary_end and True or time_match >= summary_end
 			elif xbegin <= begin2 <= xend:
-				if xend < end2:
-					# recording first part of event
+				if xend < end2:  # Recording first part of event.
 					time_match = (xend - begin2) * 60
 					summary_end = (begin2 - xbegin) * 60
 					is_editable = not summary_end and True or time_match >= summary_end
-				else:
-					# recording whole event
+				else:  # Recording whole event.
 					time_match = (end2 - begin2) * 60
 					is_editable = True
 			elif offset_day:
 				xbegin -= 1440
 				xend -= 1440
 				if begin2 < xbegin <= end2:
-					if xend < end2:
-						# recording within event
+					if xend < end2: # Recording within event.
 						time_match = (xend - xbegin) * 60
 						is_editable = True
-					else:
-						# recording last part of event
+					else:  # Recording last part of event.
 						time_match = (end2 - xbegin) * 60
 						summary_end = (xend - end2) * 60
 						is_editable = not summary_end and True or time_match >= summary_end
 				elif xbegin <= begin2 <= xend:
-					if xend < end2:
-						# recording first part of event
+					if xend < end2:  # Recording first part of event.
 						time_match = (xend - begin2) * 60
 						summary_end = (begin2 - xbegin) * 60
 						is_editable = not summary_end and True or time_match >= summary_end
-					else:
-						# recording whole event
+					else:  # Recording whole event.
 						time_match = (end2 - begin2) * 60
 						is_editable = True
 		elif offset_day and checking_time:
 			xbegin -= 1440
 			xend -= 1440
 			if begin2 < xbegin <= end2:
-				if xend < end2:
-					# recording within event
+				if xend < end2:  # Recording within event.
 					time_match = (xend - xbegin) * 60
 					is_editable = True
-				else:
-					# recording last part of event
+				else:  # Recording last part of event.
 					time_match = (end2 - xbegin) * 60
 					summary_end = (xend - end2) * 60
 					is_editable = not summary_end and True or time_match >= summary_end
 			elif xbegin <= begin2 <= xend:
-				if xend < end2:
-					# recording first part of event
+				if xend < end2:  # Recording first part of event.
 					time_match = (xend - begin2) * 60
 					summary_end = (begin2 - xbegin) * 60
 					is_editable = not summary_end and True or time_match >= summary_end
-				else:
-					# recording whole event
+				else:  # Recording whole event.
 					time_match = (end2 - begin2) * 60
 					is_editable = True
 		return time_match and is_editable
@@ -1239,38 +1243,36 @@ class RecordTimer(timer.Timer):
 	def isInTimer(self, eventid, begin, duration, service):
 		returnValue = None
 		type = 0
-		time_match = 0
+		timeMatch = 0
 		bt = None
 		check_offset_time = not config.recording.margin_before.value and not config.recording.margin_after.value
 		end = begin + duration
-		refstr = ':'.join(service.split(':')[:11])
-		for x in self.getAllTimersList():
-			check = ':'.join(x.service_ref.ref.toString().split(':')[:11]) == refstr
+		refstr = ":".join(service.split(":")[:11])
+		for timer in self.getAllTimersList():
+			check = ":".join(timer.service_ref.ref.toString().split(":")[:11]) == refstr
 			if check:
-				timer_end = x.end
-				timer_begin = x.begin
+				timer_end = timer.end
+				timer_begin = timer.begin
 				type_offset = 0
-				if not x.repeated and check_offset_time:
+				if not timer.repeated and check_offset_time:
 					if 0 < end - timer_end <= 59:
 						timer_end = end
 					elif 0 < timer_begin - begin <= 59:
 						timer_begin = begin
-				if x.justplay:
+				if timer.justplay:
 					type_offset = 5
-					if (timer_end - x.begin) <= 1:
+					if (timer_end - timer.begin) <= 1:
 						timer_end += 60
-					if x.pipzap:
+					if timer.pipzap:
 						type_offset = 30
-				if x.always_zap:
+				if timer.always_zap:
 					type_offset = 10
-
-				timer_repeat = x.repeated
-				# if set 'don't stop current event but disable coming events' for repeat timer
-				running_only_curevent = x.disabled and x.isRunning() and timer_repeat
+				timer_repeat = timer.repeated
+				# If set "don't stop current event but disable coming events" for repeat timer.
+				running_only_curevent = timer.disabled and timer.isRunning() and timer_repeat
 				if running_only_curevent:
 					timer_repeat = 0
 					type_offset += 15
-
 				if timer_repeat != 0:
 					type_offset += 15
 					if bt is None:
@@ -1278,146 +1280,119 @@ class RecordTimer(timer.Timer):
 						bday = bt.tm_wday
 						begin2 = 1440 + bt.tm_hour * 60 + bt.tm_min
 						end2 = begin2 + duration / 60
-					xbt = localtime(x.begin)
+					xbt = localtime(timer.begin)
 					xet = localtime(timer_end)
 					offset_day = False
-					checking_time = x.begin < begin or begin <= x.begin <= end
+					checking_time = timer.begin < begin or begin <= timer.begin <= end
 					if xbt.tm_yday != xet.tm_yday:
 						oday = bday - 1
 						if oday == -1:
 							oday = 6
-						offset_day = x.repeated & (1 << oday)
+						offset_day = timer.repeated & (1 << oday)
 					xbegin = 1440 + xbt.tm_hour * 60 + xbt.tm_min
-					xend = xbegin + ((timer_end - x.begin) / 60)
+					xend = xbegin + ((timer_end - timer.begin) / 60)
 					if xend < xbegin:
 						xend += 1440
-					if x.repeated & (1 << bday) and checking_time:
+					if timer.repeated & (1 << bday) and checking_time:
 						if begin2 < xbegin <= end2:
-							if xend < end2:
-								# recording within event
-								time_match = (xend - xbegin) * 60
+							if xend < end2:  # Recording within event.
+								timeMatch = (xend - xbegin) * 60
 								type = type_offset + 3
-							else:
-								# recording last part of event
-								time_match = (end2 - xbegin) * 60
+							else:  # Recording last part of event.
+								timeMatch = (end2 - xbegin) * 60
 								type = type_offset + 1
 						elif xbegin <= begin2 <= xend:
-							if xend < end2:
-								# recording first part of event
-								time_match = (xend - begin2) * 60
+							if xend < end2:  # Recording first part of event.
+								timeMatch = (xend - begin2) * 60
 								type = type_offset + 4
-							else:
-								# recording whole event
-								time_match = (end2 - begin2) * 60
+							else:  # Recording whole event.
+								timeMatch = (end2 - begin2) * 60
 								type = type_offset + 2
 						elif offset_day:
 							xbegin -= 1440
 							xend -= 1440
 							if begin2 < xbegin <= end2:
-								if xend < end2:
-									# recording within event
-									time_match = (xend - xbegin) * 60
+								if xend < end2:  # Recording within event.
+									timeMatch = (xend - xbegin) * 60
 									type = type_offset + 3
-								else:
-									# recording last part of event
-									time_match = (end2 - xbegin) * 60
+								else:  # Recording last part of event.
+									timeMatch = (end2 - xbegin) * 60
 									type = type_offset + 1
 							elif xbegin <= begin2 <= xend:
-								if xend < end2:
-									# recording first part of event
-									time_match = (xend - begin2) * 60
+								if xend < end2:  # Recording first part of event.
+									timeMatch = (xend - begin2) * 60
 									type = type_offset + 4
-								else:
-									# recording whole event
-									time_match = (end2 - begin2) * 60
+								else:  # Recording whole event.
+									timeMatch = (end2 - begin2) * 60
 									type = type_offset + 2
 					elif offset_day and checking_time:
 						xbegin -= 1440
 						xend -= 1440
 						if begin2 < xbegin <= end2:
-							if xend < end2:
-								# recording within event
-								time_match = (xend - xbegin) * 60
+							if xend < end2:  # Recording within event.
+								timeMatch = (xend - xbegin) * 60
 								type = type_offset + 3
-							else:
-								# recording last part of event
-								time_match = (end2 - xbegin) * 60
+							else:  # Recording last part of event.
+								timeMatch = (end2 - xbegin) * 60
 								type = type_offset + 1
 						elif xbegin <= begin2 <= xend:
-							if xend < end2:
-								# recording first part of event
-								time_match = (xend - begin2) * 60
+							if xend < end2:  # Recording first part of event.
+								timeMatch = (xend - begin2) * 60
 								type = type_offset + 4
-							else:
-								# recording whole event
-								time_match = (end2 - begin2) * 60
+							else:  # Recording whole event.
+								timeMatch = (end2 - begin2) * 60
 								type = type_offset + 2
 				else:
 					if begin < timer_begin <= end:
-						if timer_end < end:
-							# recording within event
-							time_match = timer_end - timer_begin
+						if timer_end < end:  # Recording within event.
+							timeMatch = timer_end - timer_begin
 							type = type_offset + 3
-						else:
-							# recording last part of event
-							time_match = end - timer_begin
+						else:  # Recording last part of event.
+							timeMatch = end - timer_begin
 							type = type_offset + 1
 					elif timer_begin <= begin <= timer_end:
-						if timer_end < end:
-							# recording first part of event
-							time_match = timer_end - begin
+						if timer_end < end:  # Recording first part of event.
+							timeMatch = timer_end - begin
 							type = type_offset + 4
-						else:
-							# recording whole event
-							time_match = end - begin
+						else:  # Recording whole event.
+							timeMatch = end - begin
 							type = type_offset + 2
-				if time_match:
-					if type in (2, 7, 12, 17, 22, 27, 32):
-						# When full recording do not look further
-						returnValue = (time_match, [type])
+				if timeMatch:
+					if type in (2, 7, 12, 17, 22, 27, 32):  # When full recording do not look further.
+						returnValue = (timeMatch, [type])
 						break
 					elif returnValue:
 						if type not in returnValue[1]:
 							returnValue[1].append(type)
 					else:
-						returnValue = (time_match, [type])
-
+						returnValue = (timeMatch, [type])
 		return returnValue
 
 	def removeEntry(self, entry):
-		print("[Timer] Remove " + str(entry))
-
-		# avoid re-enqueuing
-		entry.repeated = False
-
-		# abort timer.
-		# this sets the end time to current time, so timer will be stopped.
+		print("[RecordTimer] Remove entry '%s'." % str(entry))
+		entry.repeated = False  # Avoid re-enqueuing.
 		entry.autoincrease = False
-		entry.abort()
-
+		entry.abort()  # Abort timer.  This sets the end time to current time, so timer will be stopped.
 		if entry.state != entry.StateEnded:
 			self.timeChanged(entry)
-
-		print("state: ", entry.state)
-		print("in processed: ", entry in self.processed_timers)
-		print("in running: ", entry in self.timer_list)
-		# autoincrease instanttimer if possible
-		if not entry.dontSave:
-			for x in self.timer_list:
-				if x.setAutoincreaseEnd():
-					self.timeChanged(x)
-		if entry in self.processed_timers:
-			# now the timer should be in the processed_timers list. remove it from there.
+		print("[RecordTimer] State: %s." % entry.state)
+		print("[RecordTimer] In processed: %s." % entry in self.processed_timers)
+		print("[RecordTimer] In running: %s." % entry in self.timer_list)
+		if not entry.dontSave:  # Auto increase instant timer if possible.
+			for timer in self.timer_list:
+				if timer.setAutoincreaseEnd():
+					self.timeChanged(timer)
+		if entry in self.processed_timers:  # Now the timer should be in the processed_timers list, remove it from there.
 			self.processed_timers.remove(entry)
-		self.saveTimer()
+		self.saveTimers()
 
 	def shutdown(self):
-		self.saveTimer()
+		self.saveTimers()
 
 	def cleanup(self):
-		timer.Timer.cleanup(self)
-		self.saveTimer()
+		Timer.cleanup(self)
+		self.saveTimers()
 
 	def cleanupDaily(self, days):
-		timer.Timer.cleanupDaily(self, days)
-		self.saveTimer()
+		Timer.cleanupDaily(self, days)
+		self.saveTimers()
