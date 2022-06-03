@@ -310,7 +310,7 @@ def runScreen():
 	session.scart = AutoScartControl(session)  # We need session.scart to access it from within menu.xml.
 	profile("InitTrashcan")
 	import Tools.Trashcan
-	Tools.Trashcan.init(session)
+	Tools.Trashcan.InitTrashcan(session)
 	profile("InitVolumeAdjust")
 	import Screens.VolumeAdjust
 	Screens.VolumeAdjust.autostart(session)
