@@ -3,7 +3,6 @@ installdir = $(pkglibdir)/python/Tools
 install_PYTHON = \
 	__init__.py \
 	Alternatives.py \
-	ASCIItranslit.py \
 	BoundFunction.py \
 	CamControl.py \
 	CIHelper.py \

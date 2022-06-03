@@ -36,7 +36,6 @@ from Screens.TimeDateInput import TimeDateInput
 from Screens.UnhandledKey import UnhandledKey
 from ServiceReference import ServiceReference, isPlayableForCur
 
-from Tools.ASCIItranslit import legacyEncode
 from Tools.Directories import fileExists, getRecordingFilename, moveFiles
 from Tools.Notifications import AddPopup, AddNotificationWithCallback, current_notifications, lock, notificationAdded, notifications, RemovePopup
 
@@ -2049,9 +2048,6 @@ class InfoBarTimeshift:
 			filename += " - " + info["name"] + " - " + info["description"]
 		else:
 			filename += " - " + info["name"] # standard
-
-		if config.recording.ascii_filenames.value:
-			filename = legacyEncode(filename)
 
 		print("New timeshift filename: ", filename)
 		return filename

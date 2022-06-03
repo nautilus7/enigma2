@@ -21,7 +21,6 @@ from Screens.PictureInPicture import PictureInPicture
 from ServiceReference import ServiceReference, isPlayableForCur
 from timer import Timer, TimerEntry
 from Tools.Alternatives import ResolveCiAlternative
-from Tools.ASCIItranslit import legacyEncode
 from Tools.CIHelper import cihelper
 from Tools.Directories import SCOPE_CONFIG, fileReadXML, getRecordingFilename, resolveFilename
 from Tools.Notifications import AddNotification, AddNotificationWithCallback, AddPopup
@@ -316,8 +315,6 @@ class RecordTimerEntry(TimerEntry):
 				filename = "%s - %s - %s" % (filename, name, self.description)
 			else:
 				filename = "%s - %s" % (filename, name)  # Standard
-		if config.recording.ascii_filenames.value:
-			filename = legacyEncode(filename)
 		if not self.dirname:
 			dirname = findSafeRecordPath(defaultMoviePath())
 		else:
