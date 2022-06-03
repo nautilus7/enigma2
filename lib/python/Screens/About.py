@@ -97,7 +97,7 @@ class About(Screen):
 		hddlist = harddiskmanager.HDDList()
 		hddinfo = ""
 		if hddlist:
-			formatstring = hddsplit and "%s:%s, %.1f %s %s" or "%s\n(%s, %.1f %s %s)"
+			formatstring = "%s:%s, %.1f %s %s" if hddsplit else "%s\n(%s, %.1f %s %s)"
 			for count in range(len(hddlist)):
 				if hddinfo:
 					hddinfo += "\n"
