@@ -618,19 +618,19 @@ def copytree(src, dst, symlinks=False):
 def moveFiles(fileList):
 	errorFlag = False
 	movedList = []
-	try:
-		for item in fileList:
+	for item in fileList:
+		try:
 			os.rename(item[0], item[1])
 			movedList.append(item)
-	except (IOError, OSError) as err:
-		if err.errno == errno.EXDEV:  # Invalid cross-device link
-			print("[Directories] Warning: Cannot rename across devices, trying slower move.")
-			from Tools.CopyFiles import moveFiles as extMoveFiles
-			extMoveFiles(fileList, item[0])
-			print("[Directories] Moving files in background.")
-		else:
-			print("[Directories] Error %d: Moving file '%s' to '%s'! (%s)" % (err.errno, item[0], item[1], err.strerror))
-			errorFlag = True
+		except (IOError, OSError) as err:
+			if err.errno == errno.EXDEV:  # Invalid cross-device link
+				print("[Directories] Warning: Cannot rename across devices, trying slower move.")
+				from Tools.CopyFiles import moveFiles as extMoveFiles
+				extMoveFiles(fileList, item[0])
+				print("[Directories] Moving files in background.")
+			else:
+				print("[Directories] Error %d: Moving file '%s' to '%s'! (%s)" % (err.errno, item[0], item[1], err.strerror))
+				errorFlag = True
 	if errorFlag:
 		print("[Directories] Reversing renamed files due to error.")
 		for item in movedList:
