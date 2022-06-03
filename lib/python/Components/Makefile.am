@@ -24,7 +24,6 @@ install_PYTHON = \
 	GUIComponent.py \
 	Harddisk.py \
 	HdmiCec.py \
-	HTMLComponent.py \
 	ImportChannels.py \
 	Input.py \
 	InputDevice.py \
