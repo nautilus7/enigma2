@@ -1,14 +1,11 @@
 from Tools.Profile import profile
-from enigma import eServiceReference
+from enigma import eServiceReference, eServiceCenter, iPlayableService
 
 # workaround for required config entry dependencies.
 import Screens.MovieSelection
 
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
-
-profile("LOAD:enigma")
-import enigma
 
 profile("LOAD:InfoBarGenerics")
 from Screens.InfoBarGenerics import InfoBarShowHide, \
@@ -70,7 +67,7 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 		self.helpList.append((self["actions"], "InfobarActions", [("showRadio", _("Listen to the radio..."))]))
 
 		self.__event_tracker = ServiceEventTracker(screen=self, eventmap={
-				enigma.iPlayableService.evUpdatedEventInfo: self.__eventInfoChanged
+				iPlayableService.evUpdatedEventInfo: self.__eventInfoChanged
 			})
 
 		self.current_begin_time = 0
@@ -93,10 +90,6 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 			if config.usage.show_infobar_on_event_change.value:
 				if old_begin_time and old_begin_time != self.current_begin_time:
 					self.doShow()
-
-	def __checkServiceStarted(self):
-		self.__serviceStarted(True)
-		self.onExecBegin.remove(self.__checkServiceStarted)
 
 	def serviceStarted(self):  #override from InfoBarShowHide
 		new = self.servicelist.newServicePlayed()
@@ -286,7 +279,7 @@ class MoviePlayer(InfoBarBase, InfoBarShowHide, InfoBarMenu, InfoBarSeek, InfoBa
 			return
 		if answer in ("quitanddelete", "quitanddeleteconfirmed", "deleteandmovielist", "deleteandmovielistconfirmed"):
 			ref = self.session.nav.getCurrentlyPlayingServiceOrGroup()
-			serviceHandler = enigma.eServiceCenter.getInstance()
+			serviceHandler = eServiceCenter.getInstance()
 			if answer in ("quitanddelete", "deleteandmovielist"):
 				msg = ''
 				if config.usage.movielist_trashcan.value:
@@ -546,4 +539,4 @@ class MoviePlayer(InfoBarBase, InfoBarShowHide, InfoBarMenu, InfoBarSeek, InfoBa
 		AddPopup(text="%s/%s: %s" % (index, n, self.ref2HumanName(ref)), type=MessageBox.TYPE_INFO, timeout=5)
 
 	def ref2HumanName(self, ref):
-		return enigma.eServiceCenter.getInstance().info(ref).getName(ref)
+		return eServiceCenter.getInstance().info(ref).getName(ref)
