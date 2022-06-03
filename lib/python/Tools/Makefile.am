@@ -5,7 +5,7 @@ install_PYTHON = \
 	Alternatives.py \
 	ASCIItranslit.py \
 	BoundFunction.py \
-	camcontrol.py \
+	CamControl.py \
 	CIHelper.py \
 	CList.py \
 	CopyFiles.py \

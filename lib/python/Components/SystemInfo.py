@@ -32,7 +32,7 @@ def countFrontpanelLEDs():
 
 
 def hassoftcaminstalled():
-	from Tools.camcontrol import CamControl
+	from Tools.CamControl import CamControl
 	return len(CamControl("softcam").getList()) > 1
 
 

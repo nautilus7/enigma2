@@ -6,7 +6,7 @@ from Components.ActionMap import HelpableActionMap
 from Components.config import ConfigSelection, NoSave, config
 from Components.ScrollLabel import ScrollLabel
 from Components.Sources.StaticText import StaticText
-from Tools.camcontrol import CamControl
+from Tools.CamControl import CamControl
 from Tools.Directories import isPluginInstalled
 from Tools.GetEcmInfo import GetEcmInfo
 from Screens.MessageBox import MessageBox
