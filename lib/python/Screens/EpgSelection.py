@@ -150,7 +150,7 @@ class EPGSelection(Screen):
 			menu.append((_("Goto specific date/time"), self.enterDateTime))
 		menu.append((_("Timer Overview"), self.openTimerOverview))
 		if len(menu) == 1:
-			menu and menu[0][1]()
+			menu[0][1]()
 		elif len(menu) > 1:
 			def boxAction(choice):
 				if choice:
@@ -433,7 +433,7 @@ class EPGSelection(Screen):
 							self.session.nav.RecordTimer.timeChanged(x)
 					simulTimerList = self.session.nav.RecordTimer.record(entry)
 					if simulTimerList is not None:
-						self.session.openWithCallback(boundFunction(self.finishedEdit, service_ref, begin, end), TimerSanityConflict, simulTimerList)
+						self.session.openWithCallback(boundFunction(self.finishedEdit, entry.service_ref, entry.begin, entry.end), TimerSanityConflict, simulTimerList)
 						return
 					else:
 						self.session.nav.RecordTimer.timeChanged(entry)
