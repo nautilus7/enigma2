@@ -84,14 +84,14 @@ class Geolocation:
 			response = urlopen("http://ip-api.com/json/?fields=%s" % fields, data=None, timeout=10).read()
 			if response:
 				geolocation = loads(response)
-			status = geolocation.get("status", "unknown/undefined")
-			if status and status == "success":
-				print("[Geolocation] Geolocation data retreived.")
-				for key in geolocation.keys():
-					self.geolocation[key] = geolocation[key]
-				return self.geolocation
-			else:
-				print("[Geolocation] Error: Geolocation lookup returned '%s' status!  Message '%s' returned." % (status, geolocation.get("message", None)))
+				status = geolocation.get("status", "unknown/undefined")
+				if status and status == "success":
+					print("[Geolocation] Geolocation data retreived.")
+					for key in geolocation.keys():
+						self.geolocation[key] = geolocation[key]
+					return self.geolocation
+				else:
+					print("[Geolocation] Error: Geolocation lookup returned '%s' status!  Message '%s' returned." % (status, geolocation.get("message", None)))
 		except ValueError:
 			print("[Geolocation] Error: Geolocation data returned can not be processed!")
 		except Exception as err:
