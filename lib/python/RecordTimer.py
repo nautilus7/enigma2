@@ -347,8 +347,8 @@ class RecordTimerEntry(TimerEntry):
 				is_playable = isPlayableForCur(rec_ref)
 				live_ci_ref = False
 				if current_ref and current_ref != rec_ref:
-					cur_assignment = cihelper.ServiceIsAssigned(current_ref.toString())
-					rec_assignment = cihelper.ServiceIsAssigned(rec_ref.toString())
+					cur_assignment = cihelper.serviceIsAssigned(current_ref.toString())
+					rec_assignment = cihelper.serviceIsAssigned(rec_ref.toString())
 					if cur_assignment and rec_assignment and cur_assignment[0] == rec_assignment[0]:
 						if cihelper.canMultiDescramble(rec_assignment[0]):
 							for x in (4, 2, 3):

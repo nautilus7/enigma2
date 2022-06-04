@@ -183,7 +183,7 @@ class TimerSanityCheck:
 		ci_timer = False
 
 		if config.misc.use_ci_assignment.value and not (self.newtimer.record_ecm and not self.newtimer.descramble):
-			new_assignment = cihelper.ServiceIsAssigned(self.newtimer.service_ref.ref.toString(), self.newtimer)
+			new_assignment = cihelper.serviceIsAssigned(self.newtimer.service_ref.ref.toString(), self.newtimer)
 			if new_assignment:
 				ci_timer = self.newtimer
 				ci_timer_dur = ci_timer.end - ci_timer.begin
@@ -263,7 +263,7 @@ class TimerSanityCheck:
 				print("[TimerSanityCheck] bug: unknown flag!")
 
 			if ci_timer and timer != ci_timer and not is_ci_timer_conflict and not (timer.record_ecm and not timer.descramble):
-				is_assignment = cihelper.ServiceIsAssigned(timer.service_ref.ref.toString(), timer)
+				is_assignment = cihelper.serviceIsAssigned(timer.service_ref.ref.toString(), timer)
 				if is_assignment and new_assignment[0] == is_assignment[0]:
 					if event[1] == self.bflag:
 						timer_begin = event[0]

@@ -189,7 +189,7 @@ class CIconfigMenu(Screen):
 
 	def cancel(self):
 		self.saveXML()
-		cihelper.load_ci_assignment(force=True)
+		cihelper.loadCiAssignment(force=True)
 		self.close()
 
 	def setServiceListInfo(self):
@@ -667,7 +667,7 @@ class myChannelSelection(ChannelSelectionBase):
 
 
 def activate_all(session):
-	cihelper.load_ci_assignment()
+	cihelper.loadCiAssignment()
 
 
 def find_in_list(list, search, listpos=0):

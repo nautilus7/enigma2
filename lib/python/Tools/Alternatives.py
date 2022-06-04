@@ -37,7 +37,7 @@ def ResolveCiAlternative(ref, ignore_ref=None, record_mode=False):
 
 						def resolveRecordLiveMode():
 							if record_mode:
-								is_assignment = cihelper.ServiceIsAssigned(refstr)
+								is_assignment = cihelper.serviceIsAssigned(refstr)
 								if not is_assignment or is_assignment[0] != record_mode[0]:
 									return True
 								elif cihelper.canMultiDescramble(is_assignment[0]):
