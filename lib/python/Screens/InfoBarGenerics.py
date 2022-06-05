@@ -3595,9 +3595,9 @@ class InfoBarSleepTimer:
 	def timerTimeout(self, action, timerMethod, name):
 		timeout = 120
 		if action != "standby":
-			isRecordTime = abs(self.session.nav.RecordTimer.getNextRecordingTime() - time()) <= 900 or self.session.nav.RecordTimer.getStillRecording() or abs(self.session.nav.RecordTimer.getNextZapTime() - time()) <= 900
-			isPowerTime = abs(self.session.nav.PowerTimer.getNextPowerManagerTime() - time()) <= 900 or self.session.nav.PowerTimer.isProcessing(exceptTimer=0)
-			if isRecordTime or isPowerTime:
+			isRecordTime = abs(self.session.nav.RecordTimer.getNextRecordingTime() - time()) <= 900 or self.session.nav.RecordTimer.isRecording() or abs(self.session.nav.RecordTimer.getNextZapTime() - time()) <= 900
+			# isPowerTime = abs(self.session.nav.PowerTimer.getNextPowerManagerTime() - time()) <= 900 or self.session.nav.PowerTimer.isProcessing(exceptTimer=0)
+			if isRecordTime:  # or isPowerTime:
 				timerMethod(1800, showMessage=False)  # 1800 = 30 minutes.
 				if not Screens.Standby.inStandby:
 					message = _("A recording, recording timer or power timer is running or will begin within 15 minutes. %s extended to 30 minutes. Your %s %s will go to Deep Standby after the recording or power timer event.\n\nGo to Deep Standby now?") % (name, brand, model)
