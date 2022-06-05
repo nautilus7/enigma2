@@ -16,7 +16,7 @@ def readFile(filename):
 def getProcMounts():
 	try:
 		mounts = open("/proc/mounts", 'r')
-	except IOError as ex:
+	except OSError as ex:
 		print("[Harddisk] Failed to open /proc/mounts", ex)
 		return []
 	result = [line.strip().split(' ') for line in mounts]
@@ -270,7 +270,7 @@ class Harddisk:
 			fstab = open("/etc/fstab")
 			lines = fstab.readlines()
 			fstab.close()
-		except IOError:
+		except OSError:
 			return -1
 		for line in lines:
 			parts = line.strip().split(" ")
@@ -459,7 +459,7 @@ class Harddisk:
 	def readStats(self):
 		try:
 			l = open("/sys/block/%s/stat" % self.device).read()
-		except IOError:
+		except OSError:
 			return -1, -1
 		data = l.split(None, 5)
 		return (int(data[0]), int(data[4]))
@@ -649,7 +649,7 @@ class HarddiskManager:
 					media = readFile("/proc/ide/%s/media" % blockdev)
 					if "cdrom" in media:
 						is_cdrom = True
-				except IOError:
+				except OSError:
 					error = True
 			# check for partitions
 			if not is_cdrom and not is_mmc and os.path.exists(devpath):
@@ -659,13 +659,13 @@ class HarddiskManager:
 					partitions.append(partition)
 			else:
 				self.cd = blockdev
-		except IOError:
+		except OSError:
 			error = True
 		# check for medium
 		medium_found = True
 		try:
 			open("/dev/" + blockdev).close()
-		except IOError as err:
+		except OSError as err:
 			if err.errno == 159: # no medium present
 				medium_found = False
 
@@ -797,7 +797,7 @@ class HarddiskManager:
 		description = _("External Storage %s") % dev
 		try:
 			description = readFile("/sys" + phys + "/model")
-		except IOError as s:
+		except OSError as s:
 			print("couldn't read model: ", s)
 		# not wholedisk and not partition 1
 		if part and part != 1:

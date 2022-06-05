@@ -1226,7 +1226,7 @@ class MovieSelection(Screen, HelpableScreen, SelectionEventInfo, InfoBarBase, Pr
 				path = os.path.join(config.movielist.last_videodir.value, ".e2settings.pkl")
 				updates = pickle.load(open(path, "rb"))
 				self.applyConfigSettings(updates)
-			except IOError as e:
+			except OSError as e:
 				updates = {
 					"listtype": config.movielist.listtype.default,
 					"moviesort": config.movielist.moviesort.default,

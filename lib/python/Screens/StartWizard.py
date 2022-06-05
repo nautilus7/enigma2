@@ -119,7 +119,7 @@ class AutoInstallWizard(Screen):
 		self["progress"].setValue(100 * (self.number_of_packages - len(self.packages)) / self.number_of_packages)
 		try:
 			open("/proc/progress", "w").write(str(self["progress"].value))
-		except IOError:
+		except OSError:
 			pass
 		self.package = self.packages.pop(0)
 		self["header"].setText(_("Autoinstalling %s") % self.package + " - %s%%" % self["progress"].value)

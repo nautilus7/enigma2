@@ -26,7 +26,7 @@ class AVSwitch:
 			try:
 				if "1" in open("/proc/stb/vmpeg/0/aspect", "r").read(): # 4:3
 					return (4, 3)
-			except IOError:
+			except OSError:
 				pass
 		elif valstr in ("16_9_always", "16_9_letterbox"): # 16:9
 			pass
@@ -208,7 +208,7 @@ def InitAVSwitch():
 				print("--> setting scaler_sharpness to: %0.8X" % myval)
 				open("/proc/stb/vmpeg/0/pep_scaler_sharpness", "w").write("%0.8X" % myval)
 				open("/proc/stb/vmpeg/0/pep_apply", "w").write("1")
-			except IOError:
+			except OSError:
 				print("couldn't write pep_scaler_sharpness")
 
 		config.av.scaler_sharpness = ConfigSlider(default=13, limits=(0, 26))

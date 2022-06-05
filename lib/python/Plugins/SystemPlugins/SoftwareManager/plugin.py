@@ -1366,7 +1366,7 @@ class OPKGSource(Screen):
 				if sources:
 					text = sources[0]
 				fp.close()
-			except IOError:
+			except OSError:
 				pass
 
 		self["key_red"] = StaticText(_("Cancel"))

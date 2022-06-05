@@ -37,7 +37,7 @@ class InputDevices:
 				self.name = ioctl(self.fd, self.EVIOCGNAME(256), buffer)
 				osclose(self.fd)
 				self.name = self.name[:self.name.find(b"\0")].decode()
-			except (IOError, OSError) as err:
+			except OSError as err:
 				print("[InputDevice] Error: device='%s' getInputDevices <ERROR: ioctl(EVIOCGNAME): '%s'>" % (device, str(err)))
 				self.name = None
 			if self.name:

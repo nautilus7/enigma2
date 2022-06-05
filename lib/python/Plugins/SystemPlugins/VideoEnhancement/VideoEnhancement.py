@@ -21,7 +21,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting contrast to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_contrast", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_contrast.")
 
 				if not VideoEnhancement.firstRun:
@@ -38,7 +38,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting saturation to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_saturation", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_saturaion.")
 
 				if not VideoEnhancement.firstRun:
@@ -55,7 +55,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting hue to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_hue", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_hue.")
 
 				if not VideoEnhancement.firstRun:
@@ -72,7 +72,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting brightness to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_brightness", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_brightness.")
 
 				if not VideoEnhancement.firstRun:
@@ -88,7 +88,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting block_noise_reduction to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_block_noise_reduction", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_block_noise_reduction.")
 
 				if not VideoEnhancement.firstRun:
@@ -105,7 +105,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting mosquito_noise_reduction to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_mosquito_noise_reduction", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_mosquito_noise_reduction.")
 
 				if not VideoEnhancement.firstRun:
@@ -122,7 +122,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting digital_contour_removal to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_digital_contour_removal", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_digital_contour_removal.")
 
 				if not VideoEnhancement.firstRun:
@@ -138,7 +138,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting splitmode to:", str(config.value))
 					open("/proc/stb/vmpeg/0/pep_split", "w").write(str(config.value))
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_split.")
 
 				if not VideoEnhancement.firstRun:
@@ -159,7 +159,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting sharpness to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_sharpness", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_sharpness.")
 
 				if not VideoEnhancement.firstRun:
@@ -176,7 +176,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting auto_flesh to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_auto_flesh", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_auto_flesh.")
 
 				if not VideoEnhancement.firstRun:
@@ -193,7 +193,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting green_boost to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_green_boost", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_green_boost.")
 
 				if not VideoEnhancement.firstRun:
@@ -210,7 +210,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting blue_boost to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_blue_boost", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_blue_boost.")
 
 				if not VideoEnhancement.firstRun:
@@ -227,7 +227,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting dynamic_contrast to: %0.8X" % myval)
 					open("/proc/stb/vmpeg/0/pep_dynamic_contrast", "w").write("%0.8X" % myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_dynamic_contrast.")
 
 				if not VideoEnhancement.firstRun:
@@ -247,7 +247,7 @@ class VideoEnhancement:
 					try:
 						print("[VideoEnhancement] setting scaler_sharpness to: %0.8X" % myval)
 						open("/proc/stb/vmpeg/0/pep_scaler_sharpness", "w").write("%0.8X" % myval)
-					except IOError:
+					except OSError:
 						print("[VideoEnhancement] couldn't write pep_scaler_sharpness.")
 
 					if not VideoEnhancement.firstRun:
@@ -264,7 +264,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting scaler_vertical_dejagging to: %s" % myval)
 					open("/proc/stb/vmpeg/0/pep_scaler_vertical_dejagging", "w").write(myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write pep_scaler_vertical_dejagging.")
 
 				if not VideoEnhancement.firstRun:
@@ -281,7 +281,7 @@ class VideoEnhancement:
 				try:
 					print("[VideoEnhancement] setting smooth to: %s" % myval)
 					open("/proc/stb/vmpeg/0/smooth", "w").write(myval)
-				except IOError:
+				except OSError:
 					print("[VideoEnhancement] couldn't write smooth.")
 
 				if not VideoEnhancement.firstRun:
@@ -301,7 +301,7 @@ class VideoEnhancement:
 		try:
 			print("[VideoEnhancement] applying pep values")
 			open("/proc/stb/vmpeg/0/pep_apply", "w").write("1")
-		except IOError:
+		except OSError:
 			print("[VideoEnhancement] couldn't apply pep values.")
 
 

@@ -108,7 +108,7 @@ class VideoHardware:
 					aspect_str = open("/proc/stb/vmpeg/0/aspect", "r").read()
 					if aspect_str == "1": # 4:3
 						ret = (4, 3)
-				except IOError:
+				except OSError:
 					pass
 			else:  # 4:3
 				ret = (4, 3)
@@ -148,7 +148,7 @@ class VideoHardware:
 	def readAvailableModes(self):
 		try:
 			modes = open("/proc/stb/video/videomode_choices").read()[:-1]
-		except IOError:
+		except OSError:
 			print("[VideoHardware] couldn't read available videomodes.")
 			self.modes_available = []
 			return
@@ -159,7 +159,7 @@ class VideoHardware:
 			try:
 				modes = open("/proc/stb/video/videomode_preferred").read()[:-1]
 				self.modes_preferred = modes.split(' ')
-			except IOError:
+			except OSError:
 				print("[VideoHardware] reading preferred modes failed, using all video modes")
 				self.modes_preferred = self.modes_available
 
@@ -210,22 +210,22 @@ class VideoHardware:
 		try:
 			open("/proc/stb/video/videomode_50hz", "w").write(mode_50)
 			open("/proc/stb/video/videomode_60hz", "w").write(mode_60)
-		except IOError:
+		except OSError:
 			try:
 				# fallback if no possibility to setup 50/60 hz mode
 				open("/proc/stb/video/videomode", "w").write(mode_50)
-			except IOError:
+			except OSError:
 				print("[VideoHardware] setting videomode failed.")
 
 		try:
 			open("/etc/videomode", "w").write(mode_50) # use 50Hz mode (if available) for booting
-		except IOError:
+		except OSError:
 			print("[VideoHardware] writing initial videomode to /etc/videomode failed.")
 
 		if SystemInfo["Has24hz"]:
 			try:
 				open("/proc/stb/video/videomode_24hz", "w").write(mode_24)
-			except IOError:
+			except OSError:
 				print("[VideoHardware] cannot open /proc/stb/video/videomode_24hz")
 
 		self.updateAspect(None)
@@ -377,11 +377,11 @@ class VideoHardware:
 		open("/proc/stb/video/policy", "w").write(policy)
 		try:
 			open("/proc/stb/denc/0/wss", "w").write(wss)
-		except IOError:
+		except OSError:
 			pass
 		try:
 			open("/proc/stb/video/policy2", "w").write(policy2)
-		except IOError:
+		except OSError:
 			pass
 
 

@@ -8,11 +8,11 @@ def getFPVersion():
 	ret = None
 	try:
 		ret = open("/proc/stb/fp/version", "r").read()
-	except IOError:
+	except OSError:
 		try:
 			fp = open("/dev/dbox/fp0")
 			ret = ioctl(fp.fileno(), 0)
-		except IOError:
+		except OSError:
 			try:
 				ret = open("/sys/firmware/devicetree/base/bolt/tag", "r").read().rstrip("\0")
 			except:
@@ -23,11 +23,11 @@ def getFPVersion():
 def setFPWakeuptime(wutime):
 	try:
 		open("/proc/stb/fp/wakeup_time", "w").write(str(wutime))
-	except IOError:
+	except OSError:
 		try:
 			fp = open("/dev/dbox/fp0")
 			ioctl(fp.fileno(), 6, pack('L', wutime)) # set wake up
-		except IOError:
+		except OSError:
 			print("setFPWakeupTime failed!")
 
 
@@ -37,7 +37,7 @@ def setRTCoffset(forsleep=None):
 	try:
 		open("/proc/stb/fp/rtc_offset", "w").write(str(forsleep))
 		print("[RTC] set RTC offset to %s sec." % (forsleep))
-	except IOError:
+	except OSError:
 		print("setRTCoffset failed!")
 
 
@@ -46,11 +46,11 @@ def setRTCtime(wutime):
 		setRTCoffset()
 	try:
 		open("/proc/stb/fp/rtc", "w").write(str(wutime))
-	except IOError:
+	except OSError:
 		try:
 			fp = open("/dev/dbox/fp0")
 			ioctl(fp.fileno(), 0x101, pack('L', wutime)) # set wake up
-		except IOError:
+		except OSError:
 			print("setRTCtime failed!")
 
 
@@ -58,11 +58,11 @@ def getFPWakeuptime():
 	ret = 0
 	try:
 		ret = open("/proc/stb/fp/wakeup_time", "r").read()
-	except IOError:
+	except OSError:
 		try:
 			fp = open("/dev/dbox/fp0")
 			ret = unpack('L', ioctl(fp.fileno(), 5, '    '))[0] # get wakeuptime
-		except IOError:
+		except OSError:
 			print("getFPWakeupTime failed!")
 	return ret
 
@@ -81,7 +81,7 @@ def getFPWasTimerWakeup():
 		try:
 			fp = open("/dev/dbox/fp0")
 			wasTimerWakeup = unpack('B', ioctl(fp.fileno(), 9, ' '))[0] and True or False
-		except IOError:
+		except OSError:
 			print("wasTimerWakeup failed!")
 	if wasTimerWakeup:
 		# clear hardware status
@@ -96,5 +96,5 @@ def clearFPWasTimerWakeup():
 		try:
 			fp = open("/dev/dbox/fp0")
 			ioctl(fp.fileno(), 10)
-		except IOError:
+		except OSError:
 			print("clearFPWasTimerWakeup failed!")

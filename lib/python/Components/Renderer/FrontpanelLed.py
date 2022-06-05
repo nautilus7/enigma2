@@ -50,15 +50,15 @@ class FrontpanelLed(Element):
 
 		try:
 			open("/proc/stb/fp/led%d_pattern" % self.which, "w").write("%08x" % pattern)
-		except IOError:
+		except OSError:
 			pass
 		if self.which == 0:
 			try:
 				open("/proc/stb/fp/led_set_pattern", "w").write("%08x" % pattern_4bit)
 				open("/proc/stb/fp/led_set_speed", "w").write("%d" % speed)
-			except IOError:
+			except OSError:
 				pass
 			try:
 				open("/proc/stb/fp/led_pattern_speed", "w").write("%d" % speed)
-			except IOError:
+			except OSError:
 				pass

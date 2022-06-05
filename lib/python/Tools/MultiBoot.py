@@ -433,7 +433,7 @@ class MultiBootClass():
 			if date.startswith("1970"):
 				date = datetime.fromtimestamp(stat(pathjoin(path, "usr/share/bootlogo.mvi")).st_mtime).strftime("%Y%m%d")
 			date = max(date, datetime.fromtimestamp(stat(pathjoin(path, "usr/bin/enigma2")).st_mtime).strftime("%Y%m%d"))
-		except (IOError, OSError) as err:
+		except OSError as err:
 			date = "00000000"
 		info["compiledate"] = date
 		lines = fileReadLines(pathjoin(path, "etc/issue"), source=MODULE_NAME)
@@ -527,7 +527,7 @@ class MultiBootClass():
 					if isfile(pathjoin(imageDir, "usr/bin/enigma2")):
 						Console().ePopen([REMOVE, REMOVE, "-rf", imageDir])
 					mkdir(imageDir)
-				except (IOError, OSError) as err:
+				except OSError as err:
 					print("[MultiBoot] hideSlot Error %d: Unable to wipe all files in slot '%s' (%s)!  (%s)" % (err.errno, self.slotCode, self.device, err.strerror))
 			else:
 				enigmaFile = ""  # This is in case the first pathjoin fails.
@@ -541,7 +541,7 @@ class MultiBootClass():
 					enigmaFile = pathjoin(imageDir, "etc")
 					if isdir(enigmaFile):
 						rename(enigmaFile, "%sx" % enigmaFile)
-				except (IOError, OSError) as err:
+				except OSError as err:
 					print("[MultiBoot] hideSlot Error %d: Unable to hide item '%s' in slot '%s' (%s)!  (%s)" % (err.errno, enigmaFile, self.slotCode, self.device, err.strerror))
 			Console().ePopen([UMOUNT, UMOUNT, self.tempDir], self.cleanUpSlot)
 
@@ -566,7 +566,7 @@ class MultiBootClass():
 				hiddenFile = "%sx" % enigmaFile
 				if isdir(hiddenFile):
 					rename(hiddenFile, enigmaFile)
-			except (IOError, OSError) as err:
+			except OSError as err:
 				print("[MultiBoot] revealSlot Error %d: Unable to reveal item '%s' in slot '%s' (%s)!  (%s)" % (err.errno, enigmaFile, self.slotCode, self.device, err.strerror))
 			Console().ePopen([UMOUNT, UMOUNT, self.tempDir], self.cleanUpSlot)
 

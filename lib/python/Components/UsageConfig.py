@@ -184,7 +184,7 @@ def InitUsageConfig():
 	if not exists(resolveFilename(SCOPE_HDD)):
 		try:
 			mkdir(resolveFilename(SCOPE_HDD), 0o755)
-		except (IOError, OSError):
+		except OSError:
 			pass
 	defaultValue = resolveFilename(SCOPE_HDD)
 	config.usage.default_path = ConfigSelection(default=defaultValue, choices=[(defaultValue, defaultValue)])

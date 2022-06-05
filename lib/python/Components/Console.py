@@ -33,7 +33,7 @@ class ConsoleItem:
 				pid = self.container.getPID()
 				print("[Console] Waiting for command (PID %d) to finish." % pid)
 				pid, exitVal = waitpid(pid, 0)
-			except (IOError, OSError) as err:
+			except OSError as err:
 				print("[Console] Error %s: Wait for command to terminate failed!  (%s)" % (err.errno, err.strerror))
 
 	def dataAvailCB(self, data):

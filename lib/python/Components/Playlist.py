@@ -48,7 +48,7 @@ class PlaylistIOInternal(PlaylistIO):
 		self.clear()
 		try:
 			file = open(filename, "r")
-		except IOError:
+		except OSError:
 			return None
 		while True:
 			entry = file.readline().strip()
@@ -77,7 +77,7 @@ class PlaylistIOM3U(PlaylistIO):
 		self.displayname = None
 		try:
 			file = open(filename, "r")
-		except IOError:
+		except OSError:
 			return None
 		while True:
 			entry = file.readline().strip()
@@ -109,7 +109,7 @@ class PlaylistIOPLS(PlaylistIO):
 		self.clear()
 		try:
 			file = open(filename, "r")
-		except IOError:
+		except OSError:
 			return None
 		entry = file.readline().strip()
 		if entry == "[playlist]": # extended pls

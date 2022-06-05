@@ -80,7 +80,7 @@ def findSafeRecordPath(dirname):
 	if not isdir(dirname):
 		try:
 			makedirs(dirname)
-		except (IOError, OSError) as err:
+		except OSError as err:
 			print("[RecordTimer] Error %d: Failed to create dir '%s'!  (%s)" % (err.errno, dirname, err.strerror))
 			return None
 	return dirname
@@ -887,7 +887,7 @@ class RecordTimer(Timer):
 			print("[RecordTimer] Error: Loading 'timers.xml' failed!")
 			try:
 				rename(self.timersFilename, "%s_bad" % self.timersFilename)
-			except (IOError, OSError) as err:
+			except OSError as err:
 				print("[RecordTimer] Error %d: Renaming broken timer file failed!  (%s)" % (err.errno, err.strerror))
 			return
 		check = False
